@@ -8,6 +8,10 @@
 #include<SDL2/SDL_ttf.h>
 
 const int GRASS_COUNT = 75;
+const int MINI_MAP_WIDTH = 150;
+const int MINI_MAP_HEIGHT = 150;
+const int MINI_MAP_X = WINDOW_WIDTH - MINI_MAP_WIDTH - 10;
+const int MINI_MAP_Y = 10;
 
 typedef struct {
     int x, y;
@@ -22,7 +26,7 @@ int initSDL(SDL_Window** window, SDL_Renderer** renderer, const char *title, int
 
     if (TTF_Init() == -1) {
         printf("TTF_Init Error: %s\n", TTF_GetError());
-        return -1;
+        return 0;
     }
 
     font = TTF_OpenFont("assets/ttf/PressStart2P-Regular.ttf", 24);
@@ -141,6 +145,35 @@ void drawScore(SDL_Renderer** renderer, int score) {
 
 }
 
+void drawMiniMap(SDL_Renderer** renderer, const std::vector<GameObject>& enemies, const GameObject& player) {
+
+    // Tỷ lệ thu nhỏ bản đồ
+    const float scale = 1.0f * MINI_MAP_WIDTH / WINDOW_WIDTH;
+
+    // Vẽ nền mini-map
+    SDL_Rect miniMapRect = {MINI_MAP_X, MINI_MAP_Y, MINI_MAP_WIDTH, MINI_MAP_HEIGHT};
+    SDL_SetRenderDrawColor(*renderer, 50, 50, 50, 200); // Màu xám đậm
+    SDL_RenderFillRect(*renderer, &miniMapRect);
+
+    // Viền mini-map
+    SDL_SetRenderDrawColor(*renderer, 255, 255, 255, 255); // Màu trắng
+    SDL_RenderDrawRect(*renderer, &miniMapRect);
+
+    // Vẽ player (màu xanh dương)
+    SDL_Color playerColor = {0, 0, 255, 255};
+    int playerX = MINI_MAP_X + static_cast<int>(player.rect.x * scale);
+    int playerY = MINI_MAP_Y + static_cast<int>(player.rect.y * scale);
+    drawCircle(renderer, playerX, playerY, 5, playerColor);
+
+    // Vẽ enemies (màu đỏ)
+    SDL_Color enemyColor = {255, 0, 0, 255};
+    for (const auto& enemy : enemies) {
+        int enemyX = MINI_MAP_X + static_cast<int>(enemy.rect.x * scale);
+        int enemyY = MINI_MAP_Y + static_cast<int>(enemy.rect.y * scale);
+        drawCircle(renderer, enemyX, enemyY, 4, enemyColor);
+    }
+}
+
 bool renderEndGameScreen(SDL_Renderer** renderer, int score) {
 
     SDL_SetRenderDrawColor(*renderer, 0, 0, 0, 255);
@@ -241,7 +274,6 @@ bool renderEndGameScreen(SDL_Renderer** renderer, int score) {
     }
     return ans;
 }
-
 
 void deInitSDL(SDL_Window** window, SDL_Renderer** renderer) {
     TTF_CloseFont(font);

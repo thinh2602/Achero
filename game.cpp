@@ -95,6 +95,7 @@ int handleGame(SDL_Window** window, SDL_Renderer** renderer) {
         }
 
         drawScore(renderer, score);
+        drawMiniMap(renderer, enemies, player);
         
         SDL_RenderPresent(*renderer);
         SDL_Delay(16);
