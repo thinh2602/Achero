@@ -7,12 +7,14 @@
 #include<SDL2/SDL.h>
 #include<SDL2/SDL_ttf.h>
 
+const int GRASS_COUNT = 75;
+
 typedef struct {
     int x, y;
     int bladeCount;
 } Grass;
 
-std::vector<Grass> grass;
+std::vector<Grass> grasses(GRASS_COUNT);
 
 int initSDL(SDL_Window** window, SDL_Renderer** renderer, const char *title, int width, int height) {
 
@@ -58,20 +60,50 @@ void drawCircle(SDL_Renderer** renderer, int centreX, int centreY, int outerRadi
     }
 }
 
-void drawRectangle(SDL_Renderer** renderer, SDL_Rect rect, SDL_Color color, int hp) {
+void drawRectangle(SDL_Renderer** renderer, SDL_Rect rect, SDL_Color color, int maxHP, int currentHP) {
+
+    float percentHP = 1.0f - 1.0f * currentHP / maxHP;
 
     SDL_SetRenderDrawColor(*renderer, color.r, color.g, color.b, color.a);
 
     for (int w = 0; w < rect.w; w++) {
         for (int h = 0; h < rect.h; h++) {
-            SDL_RenderDrawPoint(*renderer, rect.x + w, rect.y + h);
+            if (w < 4 || h < 4 || rect.w - 4 < w || rect.h - 4 < h || percentHP * (rect.h - 4 + 1) < h) {
+                SDL_RenderDrawPoint(*renderer, rect.x + w, rect.y + h);
+            }
         }
     }
 
 }
 
+void drawGrass(SDL_Renderer** renderer, int type) {
 
-void drawGrass(SDL_Renderer** renderer) {
+    if (type) {
+        for (int i = 0; i < GRASS_COUNT; i++) {
+            grasses[i].x = rand() % WINDOW_WIDTH;
+            grasses[i].y = rand() % WINDOW_HEIGHT;
+            grasses[i].bladeCount = 3 + rand() % 2; 
+        }
+    }
+
+    SDL_SetRenderDrawColor(*renderer, 255, 255, 255, 255);
+    for (int i = 0; i < GRASS_COUNT; i++) {
+        Grass grass = grasses[i];
+        for (int i = 0; i < grass.bladeCount; i++) {
+            double angle = (rand() % 50 - 25) * M_PI / 180;  // Góc lệch từ -20 đến 20 độ
+            int length = rand() % 20 + 5;  // Chiều dài từ 20 đến 40 px
+            int width = 2;  // Độ rộng nhánh cỏ
+
+            int end_x = grass.x + (int)(sin(angle) * length);
+            int end_y = grass.y - (int)(cos(angle) * length);
+
+            // Vẽ nhánh cỏ
+            SDL_RenderDrawLine(*renderer, grass.x, grass.y, end_x, end_y);
+    
+            // Đậm hơn một chút bằng cách vẽ thêm các đường gần kề
+            SDL_RenderDrawLine(*renderer, grass.x + 1, grass.y, end_x + 1, end_y);
+        }
+    }
 }
 
 bool renderEndGameScreen(SDL_Renderer** renderer) {

@@ -7,14 +7,19 @@
 #include<algorithm>
 
 void handleEnemyAndArrow() {
-    for (int i = 0; i < arrows.size();) {
+    for (int i = 0; i < enemies.size();) {
         bool hit = false;
-        for (int j = 0; j < enemies.size();) {
-            if (SDL_HasIntersection(&arrows[i].rect, &enemies[j].rect)) {
-                arrows.erase(arrows.begin() + i);
-                enemies.erase(enemies.begin() + j);
-                hit = true;
-                break;
+        for (int j = 0; j < arrows.size();) {
+            if (SDL_HasIntersection(&enemies[i].rect, &arrows[j].rect)) {
+                enemies[i].currentHP -= arrows[j].dame;
+                arrows.erase(arrows.begin() + j);
+
+                if (enemies[i].currentHP <= 0) {
+                    enemies.erase(enemies.begin() + i);
+                    hit = true;
+                    break;
+                }
+
             } else {
                 j++;
             }
@@ -28,7 +33,7 @@ void handleEnemyAndArrow() {
 void handlePlayerAndEnemy() {
     for (int i = 0; i < enemies.size(); i++) {
         if (SDL_HasIntersection(&player.rect, &enemies[i].rect)) {
-            player.hp -= enemies[i].type * 2;
+            player.currentHP -= enemies[i].dame * 2;
             enemies.erase(enemies.begin() + i);
         }
     }
@@ -42,6 +47,8 @@ int handleGame(SDL_Window** window, SDL_Renderer** renderer) {
     arrows.clear();
     enemies.clear();
     initPlayer();
+    drawGrass(renderer, 1);
+
 
     while (running) {
         if (SDL_PollEvent(&event)) {
@@ -66,9 +73,10 @@ int handleGame(SDL_Window** window, SDL_Renderer** renderer) {
 
         SDL_SetRenderDrawColor(*renderer, 0, 0, 0, 255);
         SDL_RenderClear(*renderer);
-    
-        drawCircle(renderer, player.rect.x + player.rect.w / 2, player.rect.y + player.rect.h / 2, player.rect.w / 2, player.color, 100, player.hp);
 
+        drawGrass(renderer, 0);
+    
+        drawCircle(renderer, player.rect.x + player.rect.w / 2, player.rect.y + player.rect.h / 2, player.rect.w / 2, player.color, player.maxHP, player.currentHP);
 
 
         for (auto arrow: arrows) {
@@ -76,16 +84,15 @@ int handleGame(SDL_Window** window, SDL_Renderer** renderer) {
         }
 
         for (auto enemy : enemies) {
-            drawRectangle(renderer, enemy.rect, enemy.color);
+            drawRectangle(renderer, enemy.rect, enemy.color, enemy.maxHP, enemy.currentHP);
         }
-                
         
         SDL_RenderPresent(*renderer);
         SDL_Delay(16);
 
         handlePlayerAndEnemy();
 
-        if (player.hp <= 0) {
+        if (player.currentHP <= 0) {
             running = false;
         }
     }

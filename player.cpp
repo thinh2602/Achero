@@ -6,7 +6,7 @@ void initPlayer() {
     player = {
         {WINDOW_WIDTH / 2 - 25, WINDOW_HEIGHT / 2 - 25, 40, 40}, 
         {0, 255, 0, 255}, 
-        0, 0, 0, 100
+        0, 0, 0, 100, 100, 1
     };
 }
 
@@ -41,7 +41,8 @@ void PlayerAction() {
                 {player.rect.x + player.rect.w / 2 - 5, player.rect.y + player.rect.h / 2 - 5, 10, 10},
                 {255, 255, 0, 255},
                 (deltaX / length) * ARROW_SPEED,
-                (deltaY / length) * ARROW_SPEED
+                (deltaY / length) * ARROW_SPEED,
+                0, 1, 1, 1
             };
             arrows.push_back(arrow);
         }

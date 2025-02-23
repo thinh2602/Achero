@@ -11,7 +11,6 @@
 extern const int WINDOW_WIDTH;
 extern const int WINDOW_HEIGHT;
 extern const int PLAYER_SPEED;
-extern const int GRASS_COUNT;
 extern const int ARROW_SPEED;
 extern const int ENEMY_SPEED;
 
@@ -20,7 +19,8 @@ typedef struct {
     SDL_Color color;
     float dx, dy;
     int type;
-    int hp;
+    int currentHP, maxHP;
+    int dame;
 } GameObject;
 
 extern std::vector<GameObject> arrows;

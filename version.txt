@@ -1,5 +1,18 @@
-Project: Your Project Name
+
+Project: Achero
 Version: 1.0.0
 Date: 2025-02-23 3:04 CH
 Author: Thinh Pham
 Description: Initial complete version with core structure, including SDL initialization, game loop, player health bar, enemy implementation, and a game-over window.
+
+Project: Achero
+Version: 1.1.0
+Date: 2025-02-23 4:30 CH
+Author: Thinh Pham
+Description: Added grass background animation.
+
+Project: Achero
+Version: 1.2.0
+Date: 2025-02-23 5:30 CH
+Author: Thinh Pham
+Description: Added enemy health bar and enemy blood effects.

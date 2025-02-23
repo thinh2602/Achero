@@ -43,7 +43,7 @@ void enemySpawn() {
         rect,
         enemyColor,
         0, 0,
-        enemyType, 100
+        enemyType, (8 - enemyType * 2), (8 - enemyType * 2), (8 - enemyType * 2)
     };
     enemies.push_back(enemy);
 }
