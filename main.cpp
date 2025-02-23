@@ -25,8 +25,8 @@ int main(int argc, char* argv[]) {
             case 1:
                 running = handleGame(&window, &renderer);
                 break;
-            case 2:
-                running = renderEndGameScreen(&renderer);
+            default:
+                running = renderEndGameScreen(&renderer, running);
                 break;
         }
         if(SDL_PollEvent(&event)) {
@@ -37,8 +37,6 @@ int main(int argc, char* argv[]) {
     }
 
 
-    SDL_DestroyWindow(window);
-    SDL_DestroyRenderer(renderer);
-    SDL_Quit();
+    deInitSDL(&window, &renderer);
     return 0;
 }

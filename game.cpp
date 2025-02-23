@@ -6,6 +6,8 @@
 
 #include<algorithm>
 
+int score;
+
 void handleEnemyAndArrow() {
     for (int i = 0; i < enemies.size();) {
         bool hit = false;
@@ -15,6 +17,9 @@ void handleEnemyAndArrow() {
                 arrows.erase(arrows.begin() + j);
 
                 if (enemies[i].currentHP <= 0) {
+
+                    score += enemies[i].type * 5;
+                    
                     enemies.erase(enemies.begin() + i);
                     hit = true;
                     break;
@@ -34,6 +39,7 @@ void handlePlayerAndEnemy() {
     for (int i = 0; i < enemies.size(); i++) {
         if (SDL_HasIntersection(&player.rect, &enemies[i].rect)) {
             player.currentHP -= enemies[i].dame * 2;
+            score += enemies[i].type * 5;
             enemies.erase(enemies.begin() + i);
         }
     }
@@ -49,6 +55,7 @@ int handleGame(SDL_Window** window, SDL_Renderer** renderer) {
     initPlayer();
     drawGrass(renderer, 1);
 
+    score = 0;
 
     while (running) {
         if (SDL_PollEvent(&event)) {
@@ -86,6 +93,8 @@ int handleGame(SDL_Window** window, SDL_Renderer** renderer) {
         for (auto enemy : enemies) {
             drawRectangle(renderer, enemy.rect, enemy.color, enemy.maxHP, enemy.currentHP);
         }
+
+        drawScore(renderer, score);
         
         SDL_RenderPresent(*renderer);
         SDL_Delay(16);
@@ -97,5 +106,5 @@ int handleGame(SDL_Window** window, SDL_Renderer** renderer) {
         }
     }
     
-    return 2;
+    return score;
 }

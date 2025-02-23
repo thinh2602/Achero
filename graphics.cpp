@@ -14,9 +14,19 @@ typedef struct {
     int bladeCount;
 } Grass;
 
+TTF_Font* font = nullptr;
+
 std::vector<Grass> grasses(GRASS_COUNT);
 
 int initSDL(SDL_Window** window, SDL_Renderer** renderer, const char *title, int width, int height) {
+
+    if (TTF_Init() == -1) {
+        printf("TTF_Init Error: %s\n", TTF_GetError());
+        return -1;
+    }
+
+    font = TTF_OpenFont("assets/ttf/PressStart2P-Regular.ttf", 24);
+
 
     srand(static_cast<unsigned int>(time(nullptr)));
 
@@ -106,66 +116,97 @@ void drawGrass(SDL_Renderer** renderer, int type) {
     }
 }
 
-bool renderEndGameScreen(SDL_Renderer** renderer) {
+void drawScore(SDL_Renderer** renderer, int score) {
+    char scoreText[20];
 
-    if (TTF_Init() == -1) {
-        printf("TTF_Init Error: %s\n", TTF_GetError());
-        return -1;
-    }
+    snprintf(scoreText, sizeof(scoreText), "Score: %d", score);
+
+    SDL_Color textColor = {255, 255, 255, 255};
+    SDL_Surface* textSurface = TTF_RenderText_Solid(font, scoreText, textColor);
+
+    SDL_Texture* textTexture = SDL_CreateTextureFromSurface(*renderer, textSurface);
+
+
+    SDL_Rect textRect;
+    textRect.w = textSurface->w;
+    textRect.h = textSurface->h;
+    textRect.x = (WINDOW_WIDTH - textRect.w) / 2; // Căn giữa theo chiều ngang
+    textRect.y = 10;
+
+    SDL_FreeSurface(textSurface);
+
+    SDL_RenderCopy(*renderer, textTexture, NULL, &textRect);
+
+    SDL_DestroyTexture(textTexture);
+
+}
+
+bool renderEndGameScreen(SDL_Renderer** renderer, int score) {
 
     SDL_SetRenderDrawColor(*renderer, 0, 0, 0, 255);
     SDL_RenderClear(*renderer);
 
-    TTF_Font* font = TTF_OpenFont("assets/ttf/PressStart2P-Regular.ttf", 24);
-
-    SDL_Color white = {0, 0, 0}; // Định nghĩa màu trắng
+    SDL_Color black = {0, 0, 0}; // Định nghĩa màu đen
     
-    // Vẽ hộp màu đỏ với chữ "YOU LOSE"
+    // Vẽ hộp màu đỏ với chữ "YOU LOSE" và "Score"
     SDL_SetRenderDrawColor(*renderer, 255, 0, 0, 255);
-    SDL_Rect messageRect = {WINDOW_WIDTH / 2 - 100, WINDOW_HEIGHT / 2 - 75, 200, 50};
+    SDL_Rect messageRect = {WINDOW_WIDTH / 2 - 100, WINDOW_HEIGHT / 2 - 100, 200, 100}; // Tăng chiều cao hộp
     SDL_RenderFillRect(*renderer, &messageRect);
 
-    SDL_Surface* messageSurface = TTF_RenderText_Solid(font, "YOU LOSE", white);
+    // Vẽ chữ "YOU LOSE"
+    SDL_Surface* messageSurface = TTF_RenderText_Solid(font, "YOU LOSE", black);
     SDL_Texture* messageTexture = SDL_CreateTextureFromSurface(*renderer, messageSurface);
-    SDL_Rect messageTextRect = {WINDOW_WIDTH / 2 - 80, WINDOW_HEIGHT / 2 - 65, 160, 30};
+    SDL_Rect messageTextRect = {WINDOW_WIDTH / 2 - 80, WINDOW_HEIGHT / 2 - 90, 160, 30}; // Căn giữa phía trên hộp
     SDL_RenderCopy(*renderer, messageTexture, NULL, &messageTextRect);
     SDL_FreeSurface(messageSurface);
     SDL_DestroyTexture(messageTexture);
 
+    // -------------------- HIỂN THỊ SCORE BÊN TRONG HỘP --------------------
+    char scoreText[50];
+    snprintf(scoreText, sizeof(scoreText), "Score: %d", score); // Tạo chuỗi score
+
+    SDL_Surface* scoreSurface = TTF_RenderText_Solid(font, scoreText, black);
+    SDL_Texture* scoreTexture = SDL_CreateTextureFromSurface(*renderer, scoreSurface);
+
+    SDL_Rect scoreTextRect = {WINDOW_WIDTH / 2 - 60, WINDOW_HEIGHT / 2 - 50, 120, 25}; // Ngay dưới "YOU LOSE"
+    SDL_RenderCopy(*renderer, scoreTexture, NULL, &scoreTextRect);
+
+    SDL_FreeSurface(scoreSurface);
+    SDL_DestroyTexture(scoreTexture);
+    // ----------------------------------------------------------------------
+
     // Vẽ nút "REPLAY" màu xanh
     SDL_SetRenderDrawColor(*renderer, 0, 255, 0, 255);
-    SDL_Rect retryButton = {WINDOW_WIDTH / 2 - 100, WINDOW_HEIGHT / 2, 90, 50};
+    SDL_Rect retryButton = {WINDOW_WIDTH / 2 - 100, WINDOW_HEIGHT / 2 + 20, 90, 50};
     SDL_RenderFillRect(*renderer, &retryButton);
 
-    SDL_Surface* retrySurface = TTF_RenderText_Solid(font, "REPLAY", white);
+    SDL_Surface* retrySurface = TTF_RenderText_Solid(font, "REPLAY", black);
     SDL_Texture* retryTexture = SDL_CreateTextureFromSurface(*renderer, retrySurface);
-    SDL_Rect retryTextRect = {WINDOW_WIDTH / 2 - 90, WINDOW_HEIGHT / 2 + 10, 70, 30};
+    SDL_Rect retryTextRect = {WINDOW_WIDTH / 2 - 90, WINDOW_HEIGHT / 2 + 30, 70, 30};
     SDL_RenderCopy(*renderer, retryTexture, NULL, &retryTextRect);
     SDL_FreeSurface(retrySurface);
     SDL_DestroyTexture(retryTexture);
 
     // Vẽ nút "EXIT" màu vàng
     SDL_SetRenderDrawColor(*renderer, 255, 255, 0, 255);
-    SDL_Rect exitButton = {WINDOW_WIDTH / 2 + 10, WINDOW_HEIGHT / 2, 90, 50};
+    SDL_Rect exitButton = {WINDOW_WIDTH / 2 + 10, WINDOW_HEIGHT / 2 + 20, 90, 50};
     SDL_RenderFillRect(*renderer, &exitButton);
 
-    SDL_Surface* exitSurface = TTF_RenderText_Solid(font, "EXIT", white);
+    SDL_Surface* exitSurface = TTF_RenderText_Solid(font, "EXIT", black);
     SDL_Texture* exitTexture = SDL_CreateTextureFromSurface(*renderer, exitSurface);
-    SDL_Rect exitTextRect = {WINDOW_WIDTH / 2 + 20, WINDOW_HEIGHT / 2 + 10, 70, 30};
+    SDL_Rect exitTextRect = {WINDOW_WIDTH / 2 + 20, WINDOW_HEIGHT / 2 + 30, 70, 30};
     SDL_RenderCopy(*renderer, exitTexture, NULL, &exitTextRect);
     SDL_FreeSurface(exitSurface);
     SDL_DestroyTexture(exitTexture);
 
-
-        
-    // Cập nhật renderer để hiển thị các nút
+    // Cập nhật renderer để hiển thị tất cả
     SDL_RenderPresent(*renderer);
-        
+
     // Xử lý sự kiện chuột khi nhấn nút
     SDL_Event event;
     bool waitingForInput = true;
     bool ans;
-    
+
     while (waitingForInput) {
         if (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
@@ -177,7 +218,7 @@ bool renderEndGameScreen(SDL_Renderer** renderer) {
             if (event.type == SDL_MOUSEBUTTONDOWN) {
                 int mouseX = event.button.x;
                 int mouseY = event.button.y;
-        
+
                 // Kiểm tra nếu bấm vào nút "Chơi lại"
                 if (mouseX >= retryButton.x && mouseX <= retryButton.x + retryButton.w &&
                     mouseY >= retryButton.y && mouseY <= retryButton.y + retryButton.h) {
@@ -186,20 +227,26 @@ bool renderEndGameScreen(SDL_Renderer** renderer) {
                     waitingForInput = false;
                     break;
                 }
-        
+
                 // Kiểm tra nếu bấm vào nút "Thoát game"
                 if (mouseX >= exitButton.x && mouseX <= exitButton.x + exitButton.w &&
                     mouseY >= exitButton.y && mouseY <= exitButton.y + exitButton.h) {
 
-                                
                     waitingForInput = false;
                     ans = false;
                     break;
                 }
             }
-        }        
+        }
     }
+    return ans;
+}
+
+
+void deInitSDL(SDL_Window** window, SDL_Renderer** renderer) {
     TTF_CloseFont(font);
     TTF_Quit();
-    return ans;
+    SDL_DestroyWindow(*window);
+    SDL_DestroyRenderer(*renderer);
+    SDL_Quit();
 }
