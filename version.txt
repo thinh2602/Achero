@@ -1,0 +1,5 @@
+Project: Your Project Name
+Version: 1.0.0
+Date: 2025-02-23 3:04 CH
+Author: Thinh Pham
+Description: Initial complete version with core structure, including SDL initialization, game loop, player health bar, enemy implementation, and a game-over window.
