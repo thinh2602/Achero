@@ -21,23 +21,15 @@ void enemySpawn() {
             break;
     }
 
-    SDL_Rect rect;
+    // Sinh góc và bán kính ngẫu nhiên
+    double angle = ((double)rand() / RAND_MAX) * 2 * M_PI; // Góc từ 0 đến 2π
+    double radius = 800 + ((double)rand() / RAND_MAX) * 200; // Bán kính từ 800 đến 1000
 
-    switch (rand() % 10 % 4) {
-        case 0:
-            rect = {rand() % WINDOW_WIDTH - 50, 0, 35, 35};
-            break;
-        case 1:
-            rect = {0, rand() % WINDOW_HEIGHT, 35, 35};
-            break;
-        case 2:
-            rect = {WINDOW_WIDTH, rand() % WINDOW_HEIGHT, 35, 35};
-            break;
-        case 3:
-            rect = {rand() % WINDOW_WIDTH, WINDOW_HEIGHT, 35, 35};
-            break;
-    }
-    
+    // Tính tọa độ theo góc và bán kính
+    int spawnX = radius * cos(angle);
+    int spawnY = radius * sin(angle);
+
+    SDL_Rect rect = {spawnX - 17, spawnY - 17, 35, 35}; // Căn giữa enemy
 
     GameObject enemy = {
         rect,
@@ -45,15 +37,18 @@ void enemySpawn() {
         0, 0,
         enemyType, (8 - enemyType * 2), (8 - enemyType * 2), (8 - enemyType * 2)
     };
+
     enemies.push_back(enemy);
 }
 
 void enemyAction() {
     for (GameObject& enemy : enemies) {
-        float deltaX = (player.rect.x + player.rect.w / 2) - (enemy.rect.x + enemy.rect.w / 2);
-        float deltaY = (player.rect.y + player.rect.h / 2) - (enemy.rect.y + enemy.rect.h / 2);
+        float deltaX = player.rect.x - enemy.rect.x;
+        float deltaY = player.rect.y - enemy.rect.y;
         float length = sqrt(deltaX * deltaX + deltaY * deltaY);
-
+        if (length + 2 <= player.rect.w) {
+            continue;
+        }
         int speed = 0;
         switch (enemy.type) {
             case 1: speed = 3; break; 

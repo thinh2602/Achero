@@ -10,9 +10,15 @@ int score;
 
 void handleEnemyAndArrow() {
     for (int i = 0; i < enemies.size();) {
+        SDL_Rect rectEnemy = enemies[i].rect;
+        rectEnemy.x -= rectEnemy.w / 2;
+        rectEnemy.y -= rectEnemy.h / 2;
         bool hit = false;
         for (int j = 0; j < arrows.size();) {
-            if (SDL_HasIntersection(&enemies[i].rect, &arrows[j].rect)) {
+            SDL_Rect rectArrow = arrows[j].rect;
+            rectArrow.x -= rectArrow.w / 2;
+            rectArrow.y -= rectArrow.h / 2;
+            if (SDL_HasIntersection(&rectEnemy, &rectArrow)) {
                 enemies[i].currentHP -= arrows[j].dame;
                 arrows.erase(arrows.begin() + j);
 
@@ -36,11 +42,20 @@ void handleEnemyAndArrow() {
 }
 
 void handlePlayerAndEnemy() {
+    SDL_Rect rectPlayer = player.rect;
+    rectPlayer.x -= rectPlayer.w / 2;
+    rectPlayer.y -= rectPlayer.h / 2;
     for (int i = 0; i < enemies.size(); i++) {
-        if (SDL_HasIntersection(&player.rect, &enemies[i].rect)) {
-            player.currentHP -= enemies[i].dame * 2;
-            score += enemies[i].type * 5;
-            enemies.erase(enemies.begin() + i);
+        SDL_Rect rectEnemy = enemies[i].rect;
+        rectEnemy.x -= rectEnemy.w / 2;
+        rectEnemy.y -= rectEnemy.h / 2;
+        if (SDL_HasIntersection(&rectPlayer, &rectEnemy)) {
+            player.currentHP -= enemies[i].dame;
+            enemies[i].currentHP -= player.dame;
+            if (enemies[i].currentHP <= 0) {
+                score += enemies[i].type * 5;
+                enemies.erase(enemies.begin() + i);
+            }
         }
     }
 }
@@ -53,7 +68,7 @@ int handleGame(SDL_Window** window, SDL_Renderer** renderer) {
     arrows.clear();
     enemies.clear();
     initPlayer();
-    drawGrass(renderer, 1);
+    drawGrass(renderer, player.rect.x, player.rect.y, 1);
 
     score = 0;
 
@@ -73,7 +88,7 @@ int handleGame(SDL_Window** window, SDL_Renderer** renderer) {
         }
 
         arrows.erase(std::remove_if(arrows.begin(), arrows.end(), [](GameObject& arrow) {
-            return arrow.rect.x < 0 || arrow.rect.x > WINDOW_WIDTH || arrow.rect.y < 0 || arrow.rect.y > WINDOW_HEIGHT;
+            return !(arrow.rect.x * arrow.rect.x + arrow.rect.y * arrow.rect.y <= 1000000);
         }), arrows.end());
         
         handleEnemyAndArrow();
@@ -81,17 +96,21 @@ int handleGame(SDL_Window** window, SDL_Renderer** renderer) {
         SDL_SetRenderDrawColor(*renderer, 0, 0, 0, 255);
         SDL_RenderClear(*renderer);
 
-        drawGrass(renderer, 0);
+        drawGrass(renderer, player.rect.x, player.rect.y, 0);
     
-        drawCircle(renderer, player.rect.x + player.rect.w / 2, player.rect.y + player.rect.h / 2, player.rect.w / 2, player.color, player.maxHP, player.currentHP);
+        drawCircle(renderer, 0, 0, player.rect.w / 2, player.color, player.maxHP, player.currentHP);
 
 
         for (auto arrow: arrows) {
-            drawCircle(renderer, arrow.rect.x + arrow.rect.w / 2, arrow.rect.y + arrow.rect.h / 2, arrow.rect.w / 2, arrow.color);
+            int dx = arrow.rect.x - player.rect.x;
+            int dy = arrow.rect.y - player.rect.y;
+            drawCircle(renderer, dx, dy, arrow.rect.w / 2, arrow.color);
         }
 
         for (auto enemy : enemies) {
-            drawRectangle(renderer, enemy.rect, enemy.color, enemy.maxHP, enemy.currentHP);
+            enemy.rect.x -= player.rect.x;
+            enemy.rect.y -= player.rect.y;
+            drawRectangle(renderer, enemy.rect, enemy.color, 1, enemy.maxHP, enemy.currentHP);
         }
 
         drawScore(renderer, score);

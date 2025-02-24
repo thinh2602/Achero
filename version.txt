@@ -12,18 +12,25 @@ Description: Added grass background animation.
 
 Project: Achero
 Version: 1.2.0
-Date: 2025-02-23 5:30 CH
+Date: 2025-02-23 17:30
 Author: Thinh Pham
 Description: Added enemy health bar and enemy blood effects.
 
 Project: Achero
 Version: 1.3.0
-Date: 2025-02-23 9:00 CH
+Date: 2025-02-23 21:00
 Author: Thinh Pham
 Description: Added player score calculation feature.
 
 Project: Achero
 Version: 1.4.0
-Date: 2025-02-23 10:30 CH
+Date: 2025-02-23 22:30
 Author: Thinh Pham
 Description: Added minimap feature.
+
+
+Project: Achero
+Version: 2.0.0
+Date: 2025-02-24 15:00 
+Author: Thinh Pham
+Description: Optimizes the minimap, adds map expansion, enables free character movement, and enhances player and enemy algorithms for improved performance and stability.

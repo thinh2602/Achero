@@ -6,13 +6,17 @@
 #include<cstdlib>
 #include<ctime>
 
-#define WINDOW_TITLE "test"
+#define WINDOW_TITLE "Achero"
 
 extern const int WINDOW_WIDTH;
 extern const int WINDOW_HEIGHT;
 extern const int PLAYER_SPEED;
 extern const int ARROW_SPEED;
 extern const int ENEMY_SPEED;
+extern const int WORLD_ORIGIN_X;
+extern const int WORLD_ORIGIN_Y;
+extern const int WORLD_MAP_WIDTH;
+extern const int WORLD_MAP_HEIGHT;
 
 typedef struct {
     SDL_Rect rect;

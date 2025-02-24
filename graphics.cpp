@@ -7,7 +7,7 @@
 #include<SDL2/SDL.h>
 #include<SDL2/SDL_ttf.h>
 
-const int GRASS_COUNT = 75;
+const int GRASS_COUNT = 200;
 const int MINI_MAP_WIDTH = 150;
 const int MINI_MAP_HEIGHT = 150;
 const int MINI_MAP_X = WINDOW_WIDTH - MINI_MAP_WIDTH - 10;
@@ -57,6 +57,9 @@ int initSDL(SDL_Window** window, SDL_Renderer** renderer, const char *title, int
 
 void drawCircle(SDL_Renderer** renderer, int centreX, int centreY, int outerRadius, SDL_Color color, const int maxHP, int currentHP) {
 
+    centreX += WORLD_ORIGIN_X;
+    centreY += WORLD_ORIGIN_Y;
+
     float percentHP = 1.0f - 1.0f * currentHP / maxHP;
 
     int innerRadius = outerRadius - 3;
@@ -74,8 +77,15 @@ void drawCircle(SDL_Renderer** renderer, int centreX, int centreY, int outerRadi
     }
 }
 
-void drawRectangle(SDL_Renderer** renderer, SDL_Rect rect, SDL_Color color, int maxHP, int currentHP) {
+void drawRectangle(SDL_Renderer** renderer, SDL_Rect rect, SDL_Color color, int type, int maxHP, int currentHP) {
+    
+    if (type) {
+        rect.x -= rect.w / 2;
+        rect.y -= rect.h / 2;
+    }
 
+    rect.x += WORLD_ORIGIN_X;
+    rect.y += WORLD_ORIGIN_Y;
     float percentHP = 1.0f - 1.0f * currentHP / maxHP;
 
     SDL_SetRenderDrawColor(*renderer, color.r, color.g, color.b, color.a);
@@ -90,19 +100,25 @@ void drawRectangle(SDL_Renderer** renderer, SDL_Rect rect, SDL_Color color, int 
 
 }
 
-void drawGrass(SDL_Renderer** renderer, int type) {
+void drawGrass(SDL_Renderer** renderer, int originX, int originY, int type) {
 
     if (type) {
         for (int i = 0; i < GRASS_COUNT; i++) {
-            grasses[i].x = rand() % WINDOW_WIDTH;
-            grasses[i].y = rand() % WINDOW_HEIGHT;
+            // Sinh góc và bán kính ngẫu nhiên
+            double angle = ((double)rand() / RAND_MAX) * 2 * M_PI; // Góc từ 0 đến 2π
+            double radius = ((double)rand() / RAND_MAX) * 1000; // Bán kính từ 0 đến 1000
+
+            // Tính tọa độ theo góc và bán kính
+            grasses[i].x = radius * cos(angle) + WORLD_ORIGIN_X;
+            grasses[i].y = radius * sin(angle) + WORLD_ORIGIN_Y;
             grasses[i].bladeCount = 3 + rand() % 2; 
         }
     }
 
     SDL_SetRenderDrawColor(*renderer, 255, 255, 255, 255);
-    for (int i = 0; i < GRASS_COUNT; i++) {
-        Grass grass = grasses[i];
+    for (auto grass: grasses) {
+        grass.x -= originX;
+        grass.y -= originY;
         for (int i = 0; i < grass.bladeCount; i++) {
             double angle = (rand() % 50 - 25) * M_PI / 180;  // Góc lệch từ -20 đến 20 độ
             int length = rand() % 20 + 5;  // Chiều dài từ 20 đến 40 px
@@ -148,7 +164,7 @@ void drawScore(SDL_Renderer** renderer, int score) {
 void drawMiniMap(SDL_Renderer** renderer, const std::vector<GameObject>& enemies, const GameObject& player) {
 
     // Tỷ lệ thu nhỏ bản đồ
-    const float scale = 1.0f * MINI_MAP_WIDTH / WINDOW_WIDTH;
+    const float scale = 1.0f * MINI_MAP_WIDTH / WORLD_MAP_WIDTH;
 
     // Vẽ nền mini-map
     SDL_Rect miniMapRect = {MINI_MAP_X, MINI_MAP_Y, MINI_MAP_WIDTH, MINI_MAP_HEIGHT};
@@ -161,15 +177,15 @@ void drawMiniMap(SDL_Renderer** renderer, const std::vector<GameObject>& enemies
 
     // Vẽ player (màu xanh dương)
     SDL_Color playerColor = {0, 0, 255, 255};
-    int playerX = MINI_MAP_X + static_cast<int>(player.rect.x * scale);
-    int playerY = MINI_MAP_Y + static_cast<int>(player.rect.y * scale);
+    int playerX = MINI_MAP_X + static_cast<int>(player.rect.x * scale) - WORLD_ORIGIN_X + MINI_MAP_WIDTH / 2;
+    int playerY = MINI_MAP_Y + static_cast<int>(player.rect.y * scale) - WORLD_ORIGIN_Y + MINI_MAP_HEIGHT / 2;
     drawCircle(renderer, playerX, playerY, 5, playerColor);
 
     // Vẽ enemies (màu đỏ)
     SDL_Color enemyColor = {255, 0, 0, 255};
     for (const auto& enemy : enemies) {
-        int enemyX = MINI_MAP_X + static_cast<int>(enemy.rect.x * scale);
-        int enemyY = MINI_MAP_Y + static_cast<int>(enemy.rect.y * scale);
+        int enemyX = MINI_MAP_X + static_cast<int>(enemy.rect.x * scale) - WORLD_ORIGIN_X + MINI_MAP_WIDTH / 2;
+        int enemyY = MINI_MAP_Y + static_cast<int>(enemy.rect.y * scale) - WORLD_ORIGIN_Y + MINI_MAP_HEIGHT / 2;
         drawCircle(renderer, enemyX, enemyY, 4, enemyColor);
     }
 }
