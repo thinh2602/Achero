@@ -23,7 +23,7 @@ void enemySpawn() {
 
     // Sinh góc và bán kính ngẫu nhiên
     double angle = ((double)rand() / RAND_MAX) * 2 * M_PI; // Góc từ 0 đến 2π
-    double radius = 800 + ((double)rand() / RAND_MAX) * 200; // Bán kính từ 800 đến 1000
+    double radius = (WORLD_MAP_WIDTH / 2 - 100) + ((double)rand() / RAND_MAX) * 100; // Bán kính từ 800 đến 1000
 
     // Tính tọa độ theo góc và bán kính
     int spawnX = radius * cos(angle);

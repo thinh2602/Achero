@@ -34,3 +34,9 @@ Version: 2.0.0
 Date: 2025-02-24 15:00 
 Author: Thinh Pham
 Description: Optimizes the minimap, adds map expansion, enables free character movement, and enhances player and enemy algorithms for improved performance and stability.
+
+Project: Achero
+Version: 2.0.1
+Date: 2025-02-24 20:10 
+Author: Thinh Pham
+Description: Optimized graphics and refined UI details.

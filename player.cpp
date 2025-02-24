@@ -24,9 +24,12 @@ void PlayerMovement() {
         if (keystates[keys[2 * i]] || keystates[keys[2 * i + 1]]) {
             int playerX = player.rect.x + dx[i] * PLAYER_SPEED;
             int playerY = player.rect.y + dy[i] * PLAYER_SPEED;
-            if (playerX * playerX + playerY * playerY <= 1000000) {
+            if (playerX * playerX + playerY * playerY <= (WORLD_MAP_WIDTH / 2) * (WORLD_MAP_WIDTH / 2)) {
                 player.rect.x = playerX;
                 player.rect.y = playerY;
+            } else {
+                player.rect.x -= dx[i];
+                player.rect.y -= dy[i];
             }
         }
     }

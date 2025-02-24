@@ -88,13 +88,14 @@ int handleGame(SDL_Window** window, SDL_Renderer** renderer) {
         }
 
         arrows.erase(std::remove_if(arrows.begin(), arrows.end(), [](GameObject& arrow) {
-            return !(arrow.rect.x * arrow.rect.x + arrow.rect.y * arrow.rect.y <= 1000000);
+            return !(arrow.rect.x * arrow.rect.x + arrow.rect.y * arrow.rect.y <= (WORLD_MAP_WIDTH / 2) * (WORLD_MAP_WIDTH / 2));
         }), arrows.end());
         
         handleEnemyAndArrow();
 
         SDL_SetRenderDrawColor(*renderer, 0, 0, 0, 255);
         SDL_RenderClear(*renderer);
+
 
         drawGrass(renderer, player.rect.x, player.rect.y, 0);
     

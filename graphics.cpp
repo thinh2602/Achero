@@ -22,6 +22,10 @@ TTF_Font* font = nullptr;
 
 std::vector<Grass> grasses(GRASS_COUNT);
 
+bool IsPointInWindow(int posX, int posY, int width, int height) {
+    return (-width <= posX && posX <= WINDOW_WIDTH + width && -height <= posY && posY <= WINDOW_HEIGHT + height);
+}
+
 int initSDL(SDL_Window** window, SDL_Renderer** renderer, const char *title, int width, int height) {
 
     if (TTF_Init() == -1) {
@@ -60,6 +64,10 @@ void drawCircle(SDL_Renderer** renderer, int centreX, int centreY, int outerRadi
     centreX += WORLD_ORIGIN_X;
     centreY += WORLD_ORIGIN_Y;
 
+    if (!IsPointInWindow(centreX, centreY, outerRadius, outerRadius)) {
+        return;
+    }
+
     float percentHP = 1.0f - 1.0f * currentHP / maxHP;
 
     int innerRadius = outerRadius - 3;
@@ -86,6 +94,11 @@ void drawRectangle(SDL_Renderer** renderer, SDL_Rect rect, SDL_Color color, int 
 
     rect.x += WORLD_ORIGIN_X;
     rect.y += WORLD_ORIGIN_Y;
+
+    if (!IsPointInWindow(rect.x, rect.y, rect.w, rect.h)) {
+        return;
+    }
+
     float percentHP = 1.0f - 1.0f * currentHP / maxHP;
 
     SDL_SetRenderDrawColor(*renderer, color.r, color.g, color.b, color.a);
@@ -106,7 +119,7 @@ void drawGrass(SDL_Renderer** renderer, int originX, int originY, int type) {
         for (int i = 0; i < GRASS_COUNT; i++) {
             // Sinh góc và bán kính ngẫu nhiên
             double angle = ((double)rand() / RAND_MAX) * 2 * M_PI; // Góc từ 0 đến 2π
-            double radius = ((double)rand() / RAND_MAX) * 1000; // Bán kính từ 0 đến 1000
+            double radius = ((double)rand() / RAND_MAX) * (WORLD_MAP_WIDTH / 2); // Bán kính từ 0 đến 1000
 
             // Tính tọa độ theo góc và bán kính
             grasses[i].x = radius * cos(angle) + WORLD_ORIGIN_X;
@@ -119,6 +132,10 @@ void drawGrass(SDL_Renderer** renderer, int originX, int originY, int type) {
     for (auto grass: grasses) {
         grass.x -= originX;
         grass.y -= originY;
+        if (!IsPointInWindow(grass.x, grass.y, 50, 50)) {
+            continue;
+        }
+            
         for (int i = 0; i < grass.bladeCount; i++) {
             double angle = (rand() % 50 - 25) * M_PI / 180;  // Góc lệch từ -20 đến 20 độ
             int length = rand() % 20 + 5;  // Chiều dài từ 20 đến 40 px
