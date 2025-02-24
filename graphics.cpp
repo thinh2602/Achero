@@ -18,9 +18,11 @@ typedef struct {
     int bladeCount;
 } Grass;
 
+
 TTF_Font* font = nullptr;
 
 std::vector<Grass> grasses(GRASS_COUNT);
+std::vector<SDL_Point> fences;
 
 bool IsPointInWindow(int posX, int posY, int width, int height) {
     return (-width <= posX && posX <= WINDOW_WIDTH + width && -height <= posY && posY <= WINDOW_HEIGHT + height);
@@ -176,6 +178,53 @@ void drawScore(SDL_Renderer** renderer, int score) {
 
     SDL_DestroyTexture(textTexture);
 
+}
+
+void drawNumberEnemy(SDL_Renderer** renderer, int numberEnemy) {
+    char enemyText[20];
+
+    snprintf(enemyText, sizeof(enemyText), "Enemies: %d", numberEnemy);
+
+    SDL_Color textColor = {255, 255, 255, 255};
+    SDL_Surface* textSurface = TTF_RenderText_Solid(font, enemyText, textColor);
+
+    SDL_Texture* textTexture = SDL_CreateTextureFromSurface(*renderer, textSurface);
+
+    SDL_Rect textRect;
+    textRect.w = textSurface->w;
+    textRect.h = textSurface->h;
+    textRect.x = (WINDOW_WIDTH - textRect.w) / 2; // Căn giữa theo chiều ngang
+    textRect.y = 10 + textRect.h + 5; // Đặt dưới score, cách 5px
+
+    SDL_FreeSurface(textSurface);
+
+    SDL_RenderCopy(*renderer, textTexture, NULL, &textRect);
+
+    SDL_DestroyTexture(textTexture);
+}
+
+void drawFence(SDL_Renderer** renderer, int originX, int originY, int type) {
+    if (type) {
+        fences.clear();
+        for (int x = 0; x <= WORLD_MAP_WIDTH + 60; x++) {
+            for (int y = 0; y <= WORLD_MAP_WIDTH + 60; y++) {
+                SDL_Point point = {WORLD_MAP_WIDTH / 2 + 20 - x, WORLD_MAP_WIDTH / 2 + 20 - y};
+                if ((WORLD_MAP_WIDTH / 2 + 15) * (WORLD_MAP_WIDTH / 2 + 15) <= point.x * point.x + point.y * point.y &&
+                    point.x * point.x + point.y * point.y <= (WORLD_MAP_WIDTH / 2 + 20) * (WORLD_MAP_WIDTH / 2 + 20)) {
+                        fences.push_back(point);
+                }
+            }
+        }
+    }
+    SDL_SetRenderDrawColor(*renderer, 255, 255, 255, 255);
+
+    for (auto fence: fences) {
+        int dx = fence.x - originX + WORLD_ORIGIN_X;
+        int dy = fence.y - originY + WORLD_ORIGIN_Y;
+        if (IsPointInWindow(dx, dy, 10, 10)) {
+            SDL_RenderDrawPoint(*renderer, dx, dy);
+        }
+    }
 }
 
 void drawMiniMap(SDL_Renderer** renderer, const std::vector<GameObject>& enemies, const GameObject& player) {

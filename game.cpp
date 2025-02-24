@@ -69,6 +69,7 @@ int handleGame(SDL_Window** window, SDL_Renderer** renderer) {
     enemies.clear();
     initPlayer();
     drawGrass(renderer, player.rect.x, player.rect.y, 1);
+    drawFence(renderer, player.rect.x, player.rect.y, 1);
 
     score = 0;
 
@@ -95,17 +96,17 @@ int handleGame(SDL_Window** window, SDL_Renderer** renderer) {
 
         SDL_SetRenderDrawColor(*renderer, 0, 0, 0, 255);
         SDL_RenderClear(*renderer);
-
-
-        drawGrass(renderer, player.rect.x, player.rect.y, 0);
+    
+        drawFence(renderer, player.rect.x, player.rect.y);
+        drawGrass(renderer, player.rect.x, player.rect.y);
     
         drawCircle(renderer, 0, 0, player.rect.w / 2, player.color, player.maxHP, player.currentHP);
 
 
         for (auto arrow: arrows) {
-            int dx = arrow.rect.x - player.rect.x;
-            int dy = arrow.rect.y - player.rect.y;
-            drawCircle(renderer, dx, dy, arrow.rect.w / 2, arrow.color);
+            arrow.rect.x -= player.rect.x;
+            arrow.rect.y -= player.rect.y;
+            drawCircle(renderer, arrow.rect.x, arrow.rect.y, arrow.rect.w / 2, arrow.color);
         }
 
         for (auto enemy : enemies) {
@@ -115,6 +116,7 @@ int handleGame(SDL_Window** window, SDL_Renderer** renderer) {
         }
 
         drawScore(renderer, score);
+        drawNumberEnemy(renderer, enemies.size());
         drawMiniMap(renderer, enemies, player);
         
         SDL_RenderPresent(*renderer);

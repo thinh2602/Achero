@@ -10,8 +10,10 @@ void drawCircle(SDL_Renderer** renderer, int centreX, int centreY, int outerRadi
 void drawRectangle(SDL_Renderer** renderer, SDL_Rect rect,  SDL_Color color, int type = 0, int maxHP = 1, int currentHP = 1);
 void drawGrass(SDL_Renderer** renderer, int originX, int originY, int type = 0);
 void drawScore(SDL_Renderer** renderer, int score);
-bool renderEndGameScreen(SDL_Renderer** renderer, int score);
+void drawNumberEnemy(SDL_Renderer** renderer, int numberEnemy);
+void drawFence(SDL_Renderer** renderer, int originX, int originY, int type = 0);
 void drawMiniMap(SDL_Renderer** renderer, const std::vector<GameObject>& enemies, const GameObject& player);
+bool renderEndGameScreen(SDL_Renderer** renderer, int score);
 void deInitSDL(SDL_Window** window, SDL_Renderer** renderer);
 
 

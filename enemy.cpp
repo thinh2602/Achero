@@ -46,7 +46,7 @@ void enemyAction() {
         float deltaX = player.rect.x - enemy.rect.x;
         float deltaY = player.rect.y - enemy.rect.y;
         float length = sqrt(deltaX * deltaX + deltaY * deltaY);
-        if (length + 2 <= player.rect.w) {
+        if (length + 4 <= player.rect.w) {
             continue;
         }
         int speed = 0;
