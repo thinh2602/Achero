@@ -7,6 +7,7 @@
 #include<algorithm>
 
 int score;
+int currentFPS = 0;
 
 void handleEnemyAndArrow() {
     for (int i = 0; i < enemies.size();) {
@@ -60,24 +61,70 @@ void handlePlayerAndEnemy() {
     }
 }
 
+void renderGraphicsSDL(SDL_Renderer** renderer) {
+
+    SDL_SetRenderDrawColor(*renderer, 0, 0, 0, 255);
+    SDL_RenderClear(*renderer);
+
+    drawFence(renderer, player.rect.x, player.rect.y);
+    drawGrass(renderer, player.rect.x, player.rect.y);
+
+    drawCircle(renderer, 0, 0, player.rect.w / 2, player.color, player.maxHP, player.currentHP);
+
+    for (auto arrow: arrows) {
+        arrow.rect.x -= player.rect.x;
+        arrow.rect.y -= player.rect.y;
+        drawCircle(renderer, arrow.rect.x, arrow.rect.y, arrow.rect.w / 2, arrow.color);
+    }
+
+    for (auto enemy : enemies) {
+        enemy.rect.x -= player.rect.x;
+        enemy.rect.y -= player.rect.y;
+        drawRectangle(renderer, enemy.rect, enemy.color, 1, enemy.maxHP, enemy.currentHP);
+    }
+
+    drawScore(renderer, score);
+    drawFPS(renderer, currentFPS);
+    drawNumberEnemy(renderer, enemies.size());
+    drawMiniMap(renderer, enemies, player);
+
+    SDL_RenderPresent(*renderer);
+    SDL_Delay(16);
+}
+
 int handleGame(SDL_Window** window, SDL_Renderer** renderer) {
 
     SDL_Event event;
     bool running = true;
+    score = 0;
+    int frameCount = 0, lastTime = 0;
 
     arrows.clear();
     enemies.clear();
+
     initPlayer();
     drawGrass(renderer, player.rect.x, player.rect.y, 1);
     drawFence(renderer, player.rect.x, player.rect.y, 1);
 
-    score = 0;
+    
 
     while (running) {
         if (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
                 return 0;
             }
+        }
+
+        frameCount++;
+        Uint32 currentTime = SDL_GetTicks();
+
+        if (currentTime - lastTime >= 1000) {
+            // Cập nhật FPS bằng số frame đã đếm được
+            currentFPS = frameCount;
+            
+            // Reset bộ đếm frame và cập nhật lại thời gian
+            frameCount = 0;
+            lastTime = currentTime;
         }
 
         handlePlayerAction();
@@ -93,35 +140,7 @@ int handleGame(SDL_Window** window, SDL_Renderer** renderer) {
         }), arrows.end());
         
         handleEnemyAndArrow();
-
-        SDL_SetRenderDrawColor(*renderer, 0, 0, 0, 255);
-        SDL_RenderClear(*renderer);
-    
-        drawFence(renderer, player.rect.x, player.rect.y);
-        drawGrass(renderer, player.rect.x, player.rect.y);
-    
-        drawCircle(renderer, 0, 0, player.rect.w / 2, player.color, player.maxHP, player.currentHP);
-
-
-        for (auto arrow: arrows) {
-            arrow.rect.x -= player.rect.x;
-            arrow.rect.y -= player.rect.y;
-            drawCircle(renderer, arrow.rect.x, arrow.rect.y, arrow.rect.w / 2, arrow.color);
-        }
-
-        for (auto enemy : enemies) {
-            enemy.rect.x -= player.rect.x;
-            enemy.rect.y -= player.rect.y;
-            drawRectangle(renderer, enemy.rect, enemy.color, 1, enemy.maxHP, enemy.currentHP);
-        }
-
-        drawScore(renderer, score);
-        drawNumberEnemy(renderer, enemies.size());
-        drawMiniMap(renderer, enemies, player);
-        
-        SDL_RenderPresent(*renderer);
-        SDL_Delay(16);
-
+        renderGraphicsSDL(renderer);
         handlePlayerAndEnemy();
 
         if (player.currentHP <= 0) {

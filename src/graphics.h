@@ -13,6 +13,7 @@ void drawScore(SDL_Renderer** renderer, int score);
 void drawNumberEnemy(SDL_Renderer** renderer, int numberEnemy);
 void drawFence(SDL_Renderer** renderer, int originX, int originY, int type = 0);
 void drawMiniMap(SDL_Renderer** renderer, const std::vector<GameObject>& enemies, const GameObject& player);
+void drawFPS(SDL_Renderer** renderer, int currentFPS);
 bool renderEndGameScreen(SDL_Renderer** renderer, int score);
 void deInitSDL(SDL_Window** window, SDL_Renderer** renderer);
 

@@ -64,7 +64,7 @@ void enemyAction() {
 }
 
 void handleEnemyAction() {
-    if (rand() % 16 == 0) {
+    if (rand() % 4 == 0) {
         enemySpawn();
     }
 

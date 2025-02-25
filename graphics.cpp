@@ -8,10 +8,10 @@
 #include<SDL2/SDL_ttf.h>
 
 const int GRASS_COUNT = 200;
-const int MINI_MAP_WIDTH = 150;
-const int MINI_MAP_HEIGHT = 150;
-const int MINI_MAP_X = WINDOW_WIDTH - MINI_MAP_WIDTH - 10;
-const int MINI_MAP_Y = 10;
+const int MINI_MAP_WIDTH = 128;
+const int MINI_MAP_HEIGHT = 128;
+const int MINI_MAP_X = WINDOW_WIDTH - MINI_MAP_WIDTH - 15;
+const int MINI_MAP_Y = 15;
 
 typedef struct {
     int x, y;
@@ -19,8 +19,8 @@ typedef struct {
 } Grass;
 
 
-TTF_Font* font = nullptr;
 
+std::vector<TTF_Font*> fonts(50, nullptr);
 std::vector<Grass> grasses(GRASS_COUNT);
 std::vector<SDL_Point> fences;
 
@@ -35,8 +35,9 @@ int initSDL(SDL_Window** window, SDL_Renderer** renderer, const char *title, int
         return 0;
     }
 
-    font = TTF_OpenFont("assets/ttf/PressStart2P-Regular.ttf", 24);
-
+    for (int size = 1; size <= 50; size++) {
+        fonts[size] = TTF_OpenFont("assets/ttf/PressStart2P-Regular.ttf", size);
+    }
 
     srand(static_cast<unsigned int>(time(nullptr)));
 
@@ -62,57 +63,115 @@ int initSDL(SDL_Window** window, SDL_Renderer** renderer, const char *title, int
 }
 
 void drawCircle(SDL_Renderer** renderer, int centreX, int centreY, int outerRadius, SDL_Color color, const int maxHP, int currentHP) {
-
+    // Tính offset theo world
     centreX += WORLD_ORIGIN_X;
     centreY += WORLD_ORIGIN_Y;
 
+    // Nếu vòng tròn không nằm trong cửa sổ, thoát hàm
     if (!IsPointInWindow(centreX, centreY, outerRadius, outerRadius)) {
         return;
     }
 
-    float percentHP = 1.0f - 1.0f * currentHP / maxHP;
-
+    // Tỷ lệ HP (1.0: hết máu, 0.0: đầy máu)
+    float percentHP = 1.0f - (float)currentHP / maxHP;
+    // Độ dày viền được giả định là 3 pixel
     int innerRadius = outerRadius - 3;
+    
+    // Tính trước các giá trị bình phương
+    int outerRadiusSq = outerRadius * outerRadius;
+    int innerRadiusSq = innerRadius * innerRadius;
 
+    /* 
+       Ban đầu, trong phiên bản gốc, điều kiện vẽ điểm là:
+         if (r <= outerRadius^2 && (r >= innerRadius^2 || 2.0f * innerRadius * percentHP <= 2*(innerRadius+1) - h))
+       Trong đó:
+         - Với hệ tọa độ ban đầu: h chạy từ 0 đến 2*outerRadius, và dy = outerRadius - h.
+         => h = outerRadius - dy.
+       Ta có điều kiện tương đương:
+         2.0f * innerRadius * percentHP <= 2*(innerRadius+1) - (outerRadius - dy)
+       => dy >= 2.0f * innerRadius * percentHP - 2*(innerRadius+1) + outerRadius.
+       Ta tính ngưỡng này một lần:
+    */
+    float hpDyThresholdFloat = 2.0f * innerRadius * percentHP - 2.0f * (innerRadius + 1) + outerRadius;
+    // Lấy làm số nguyên (có thể làm tròn lên)
+    int hp_dy_threshold = (int)ceil(hpDyThresholdFloat);
+
+    // Cài đặt màu vẽ
     SDL_SetRenderDrawColor(*renderer, color.r, color.g, color.b, color.a);
-    for (int w = 0; w < outerRadius * 2; w ++) {
-        for (int h = 0; h < outerRadius * 2; h ++) {
-            int dx = outerRadius - w;
-            int dy = outerRadius - h;
-            int r = dx * dx + dy * dy;
-            if (r <= outerRadius * outerRadius && (innerRadius * innerRadius <= r || 2.0f * innerRadius * percentHP <= 2 * (innerRadius + 1) - h)) {
-                SDL_RenderDrawPoint(*renderer, centreX + dx, centreY + dy);
+
+    // Duyệt theo từng hàng theo dy (từ -outerRadius đến outerRadius)
+    for (int dy = -outerRadius; dy <= outerRadius; dy++) {
+        int y_coord = centreY + dy;
+        // Tính khoảng cách x tối đa ứng với dòng dy (điểm phải nằm trong vòng tròn)
+        int dx_max = (int)floor(sqrt((double)outerRadiusSq - dy * dy));
+        
+        // Nếu dòng này nằm trong vùng hiển thị HP (theo điều kiện chuyển đổi từ h)
+        // Với h = outerRadius - dy, điều kiện trở thành: dy >= hp_dy_threshold.
+        if (dy >= hp_dy_threshold) {
+            // Vẽ toàn bộ đoạn ngang nằm trong vòng tròn
+            SDL_RenderDrawLine(*renderer, centreX - dx_max, y_coord, centreX + dx_max, y_coord);
+        } else {
+            // Với các dòng không thỏa ngưỡng HP, chỉ vẽ các điểm nằm ngoài vòng tròn trong (vùng viền)
+            // Ta cần tìm giá trị dx_min sao cho với |dx| >= dx_min thì:
+            //    dx^2 + dy^2 >= innerRadiusSq.
+            int dx_min = 0;
+            if (innerRadiusSq > dy * dy) {
+                dx_min = (int)ceil(sqrt((double)innerRadiusSq - dy * dy));
+            }
+            // Vẽ đoạn bên trái (nếu có)
+            if (dx_min <= dx_max) {
+                // Vẽ từ x = centreX - dx_max đến x = centreX - dx_min
+                SDL_RenderDrawLine(*renderer, centreX - dx_max, y_coord, centreX - dx_min, y_coord);
+                // Vẽ đoạn bên phải: từ x = centreX + dx_min đến x = centreX + dx_max
+                SDL_RenderDrawLine(*renderer, centreX + dx_min, y_coord, centreX + dx_max, y_coord);
             }
         }
     }
 }
 
 void drawRectangle(SDL_Renderer** renderer, SDL_Rect rect, SDL_Color color, int type, int maxHP, int currentHP) {
-    
+    // Nếu type != 0, căn chỉnh rect sao cho tâm của hình là vị trí đã cho
     if (type) {
         rect.x -= rect.w / 2;
         rect.y -= rect.h / 2;
     }
 
+    // Cộng thêm offset của world
     rect.x += WORLD_ORIGIN_X;
     rect.y += WORLD_ORIGIN_Y;
 
+    // Nếu hình không nằm trong cửa sổ, không vẽ
     if (!IsPointInWindow(rect.x, rect.y, rect.w, rect.h)) {
         return;
     }
 
-    float percentHP = 1.0f - 1.0f * currentHP / maxHP;
+    // Tính tỷ lệ HP (0: đầy HP, 1: hết HP)
+    float percentHP = 1.0f - (float)currentHP / maxHP;
 
+    // Cài đặt màu vẽ
     SDL_SetRenderDrawColor(*renderer, color.r, color.g, color.b, color.a);
 
-    for (int w = 0; w < rect.w; w++) {
-        for (int h = 0; h < rect.h; h++) {
-            if (w < 4 || h < 4 || rect.w - 4 < w || rect.h - 4 < h || percentHP * (rect.h - 4 + 1) < h) {
-                SDL_RenderDrawPoint(*renderer, rect.x + w, rect.y + h);
-            }
+    const int border = 4;       // Độ dày viền
+    const int W = rect.w;       // Chiều rộng của hình
+    const int H = rect.h;       // Chiều cao của hình
+    // Giá trị ngưỡng HP: nếu h > T thì pixel đó được vẽ (điều chỉnh vùng thể hiện HP)
+    const int T = (int)(percentHP * (H - 3));  // Vì công thức gốc: percentHP * (rect.h - 4 + 1)
+
+    // Duyệt qua từng dòng (h)
+    for (int h = 0; h < H; h++) {
+        int currentY = rect.y + h;
+
+        // Nếu dòng thuộc vùng biên trên, biên dưới hoặc vùng HP thì vẽ cả dòng
+        if (h < border || h > H - border - 1 || h > T) {
+            SDL_RenderDrawLine(*renderer, rect.x, currentY, rect.x + W - 1, currentY);
+        } else {
+            // Ở các dòng nội bộ: chỉ vẽ viền trái và phải
+            // Vẽ viền trái
+            SDL_RenderDrawLine(*renderer, rect.x, currentY, rect.x + border - 1, currentY);
+            // Vẽ viền phải
+            SDL_RenderDrawLine(*renderer, rect.x + W - border, currentY, rect.x + W - 1, currentY);
         }
     }
-
 }
 
 void drawGrass(SDL_Renderer** renderer, int originX, int originY, int type) {
@@ -156,12 +215,13 @@ void drawGrass(SDL_Renderer** renderer, int originX, int originY, int type) {
 }
 
 void drawScore(SDL_Renderer** renderer, int score) {
+    int sizeFont = 24;
     char scoreText[20];
 
     snprintf(scoreText, sizeof(scoreText), "Score: %d", score);
 
     SDL_Color textColor = {255, 255, 255, 255};
-    SDL_Surface* textSurface = TTF_RenderText_Solid(font, scoreText, textColor);
+    SDL_Surface* textSurface = TTF_RenderText_Solid(fonts[24], scoreText, textColor);
 
     SDL_Texture* textTexture = SDL_CreateTextureFromSurface(*renderer, textSurface);
 
@@ -182,11 +242,12 @@ void drawScore(SDL_Renderer** renderer, int score) {
 
 void drawNumberEnemy(SDL_Renderer** renderer, int numberEnemy) {
     char enemyText[20];
+    int sizeFont = 24;
 
     snprintf(enemyText, sizeof(enemyText), "Enemies: %d", numberEnemy);
 
     SDL_Color textColor = {255, 255, 255, 255};
-    SDL_Surface* textSurface = TTF_RenderText_Solid(font, enemyText, textColor);
+    SDL_Surface* textSurface = TTF_RenderText_Solid(fonts[sizeFont], enemyText, textColor);
 
     SDL_Texture* textTexture = SDL_CreateTextureFromSurface(*renderer, textSurface);
 
@@ -256,8 +317,40 @@ void drawMiniMap(SDL_Renderer** renderer, const std::vector<GameObject>& enemies
     }
 }
 
-bool renderEndGameScreen(SDL_Renderer** renderer, int score) {
+void drawFPS(SDL_Renderer** renderer, int currentFPS) {
+    int sizeFont = 12;
+    char fpsText[32];
 
+    // Màu chữ (trắng)
+    SDL_Color textColor = {255, 255, 255, 255};
+
+
+    snprintf(fpsText, sizeof(fpsText), "FPS: %d", currentFPS);
+
+    // Tạo surface từ chuỗi text
+    SDL_Surface* textSurface = TTF_RenderText_Blended(fonts[sizeFont], fpsText, textColor);
+
+    // Tạo texture từ surface
+    SDL_Texture* textTexture = SDL_CreateTextureFromSurface(*renderer, textSurface);
+    SDL_FreeSurface(textSurface);
+
+    if (!textTexture) {
+        SDL_Log("Không thể tạo texture từ text: %s", SDL_GetError());
+        return;
+    }
+
+    // Lấy kích thước texture
+    int textWidth, textHeight;
+    SDL_QueryTexture(textTexture, NULL, NULL, &textWidth, &textHeight);
+
+    SDL_Rect renderQuad = {WINDOW_WIDTH - 128, 4, textWidth, textHeight};
+    SDL_RenderCopy(*renderer, textTexture, NULL, &renderQuad);
+
+    SDL_DestroyTexture(textTexture);
+}
+
+bool renderEndGameScreen(SDL_Renderer** renderer, int score) {
+    int sizeFont = 24;
     SDL_SetRenderDrawColor(*renderer, 0, 0, 0, 255);
     SDL_RenderClear(*renderer);
 
@@ -269,7 +362,7 @@ bool renderEndGameScreen(SDL_Renderer** renderer, int score) {
     SDL_RenderFillRect(*renderer, &messageRect);
 
     // Vẽ chữ "YOU LOSE"
-    SDL_Surface* messageSurface = TTF_RenderText_Solid(font, "YOU LOSE", black);
+    SDL_Surface* messageSurface = TTF_RenderText_Solid(fonts[sizeFont], "YOU LOSE", black);
     SDL_Texture* messageTexture = SDL_CreateTextureFromSurface(*renderer, messageSurface);
     SDL_Rect messageTextRect = {WINDOW_WIDTH / 2 - 80, WINDOW_HEIGHT / 2 - 90, 160, 30}; // Căn giữa phía trên hộp
     SDL_RenderCopy(*renderer, messageTexture, NULL, &messageTextRect);
@@ -280,7 +373,7 @@ bool renderEndGameScreen(SDL_Renderer** renderer, int score) {
     char scoreText[50];
     snprintf(scoreText, sizeof(scoreText), "Score: %d", score); // Tạo chuỗi score
 
-    SDL_Surface* scoreSurface = TTF_RenderText_Solid(font, scoreText, black);
+    SDL_Surface* scoreSurface = TTF_RenderText_Solid(fonts[sizeFont], scoreText, black);
     SDL_Texture* scoreTexture = SDL_CreateTextureFromSurface(*renderer, scoreSurface);
 
     SDL_Rect scoreTextRect = {WINDOW_WIDTH / 2 - 60, WINDOW_HEIGHT / 2 - 50, 120, 25}; // Ngay dưới "YOU LOSE"
@@ -295,7 +388,7 @@ bool renderEndGameScreen(SDL_Renderer** renderer, int score) {
     SDL_Rect retryButton = {WINDOW_WIDTH / 2 - 100, WINDOW_HEIGHT / 2 + 20, 90, 50};
     SDL_RenderFillRect(*renderer, &retryButton);
 
-    SDL_Surface* retrySurface = TTF_RenderText_Solid(font, "REPLAY", black);
+    SDL_Surface* retrySurface = TTF_RenderText_Solid(fonts[sizeFont], "REPLAY", black);
     SDL_Texture* retryTexture = SDL_CreateTextureFromSurface(*renderer, retrySurface);
     SDL_Rect retryTextRect = {WINDOW_WIDTH / 2 - 90, WINDOW_HEIGHT / 2 + 30, 70, 30};
     SDL_RenderCopy(*renderer, retryTexture, NULL, &retryTextRect);
@@ -307,7 +400,7 @@ bool renderEndGameScreen(SDL_Renderer** renderer, int score) {
     SDL_Rect exitButton = {WINDOW_WIDTH / 2 + 10, WINDOW_HEIGHT / 2 + 20, 90, 50};
     SDL_RenderFillRect(*renderer, &exitButton);
 
-    SDL_Surface* exitSurface = TTF_RenderText_Solid(font, "EXIT", black);
+    SDL_Surface* exitSurface = TTF_RenderText_Solid(fonts[sizeFont], "EXIT", black);
     SDL_Texture* exitTexture = SDL_CreateTextureFromSurface(*renderer, exitSurface);
     SDL_Rect exitTextRect = {WINDOW_WIDTH / 2 + 20, WINDOW_HEIGHT / 2 + 30, 70, 30};
     SDL_RenderCopy(*renderer, exitTexture, NULL, &exitTextRect);
@@ -358,7 +451,9 @@ bool renderEndGameScreen(SDL_Renderer** renderer, int score) {
 }
 
 void deInitSDL(SDL_Window** window, SDL_Renderer** renderer) {
-    TTF_CloseFont(font);
+    for (int size = 1; size <= 50; size++) {
+        TTF_CloseFont(fonts[size]);
+    }
     TTF_Quit();
     SDL_DestroyWindow(*window);
     SDL_DestroyRenderer(*renderer);

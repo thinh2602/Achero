@@ -46,3 +46,9 @@ Version: 2.1.0
 Date: 2025-02-24 22:40 
 Author: Thinh Pham
 Description: Added barriers, enemy counter, and UI improvements.
+
+Project: Achero
+Version: 2.2.0
+Date: 2025-02-25 13:30 
+Author: Thinh Pham
+Description: Implemented FPS display and optimized character rendering.
