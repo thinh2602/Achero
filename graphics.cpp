@@ -174,13 +174,107 @@ void drawRectangle(SDL_Renderer** renderer, SDL_Rect rect, SDL_Color color, int 
     }
 }
 
+void drawRegularPolygon(SDL_Renderer** renderer, SDL_Rect rect, SDL_Color color, int sides, int type, int maxHP, int currentHP) {
+    // Nếu type khác 0, cho rằng rect.x, rect.y là tọa độ tâm, điều chỉnh về góc trên-trái
+    if (type) {
+        rect.x -= rect.w / 2;
+        rect.y -= rect.h / 2;
+    }
+
+    // Cộng thêm offset của world
+    rect.x += WORLD_ORIGIN_X;
+    rect.y += WORLD_ORIGIN_Y;
+
+    // Nếu hộp chứa không nằm trong cửa sổ, không vẽ
+    if (!IsPointInWindow(rect.x, rect.y, rect.w, rect.h)) {
+        return;
+    }
+
+    // Tính tỷ lệ HP (0: đầy HP, 1: hết HP)
+    float percentHP = 1.0f - ((float)currentHP / maxHP);
+
+    // Cài đặt màu vẽ
+    SDL_SetRenderDrawColor(*renderer, color.r, color.g, color.b, color.a);
+
+    // Tính tâm và bán kính của đa giác (lấy bán kính là nửa kích thước nhỏ hơn của rect)
+    int cx = rect.x + rect.w / 2;
+    int cy = rect.y + rect.h / 2;
+    int radius = (rect.w < rect.h ? rect.w : rect.h) / 2;
+
+    // Tính các đỉnh của đa giác
+    SDL_Point *vertices = (SDL_Point*)malloc(sizeof(SDL_Point) * sides);
+    if (!vertices) return;
+
+    for (int i = 0; i < sides; i++) {
+        double angle = 2 * M_PI * i / sides - M_PI / 2; // Trừ M_PI/2 để đỉnh đầu tiên nằm trên cùng
+        vertices[i].x = cx + (int)(radius * cos(angle));
+        vertices[i].y = cy + (int)(radius * sin(angle));
+    }
+
+    // Tính bounding box của đa giác (minY và maxY)
+    int polyMinY = vertices[0].y;
+    int polyMaxY = vertices[0].y;
+    for (int i = 1; i < sides; i++) {
+        if (vertices[i].y < polyMinY) polyMinY = vertices[i].y;
+        if (vertices[i].y > polyMaxY) polyMaxY = vertices[i].y;
+    }
+
+    const int border = 4; // Độ dày viền
+    // Tính ngưỡng T dựa theo HP (tương tự như hàm drawRectangle)
+    int T = rect.y + (int)(percentHP * (rect.h - 3));
+
+    // Duyệt từng dòng trong bounding box của đa giác
+    for (int y = polyMinY; y <= polyMaxY; y++) {
+        // Tìm giao điểm của đường ngang tại y với các cạnh của đa giác
+        double xInts[2];
+        int count = 0;
+        for (int i = 0; i < sides; i++) {
+            int j = (i + 1) % sides;
+            int y1 = vertices[i].y;
+            int y2 = vertices[j].y;
+
+            // Kiểm tra nếu dòng y cắt qua cạnh (tránh đếm trùng tại đỉnh)
+            if ((y >= y1 && y < y2) || (y >= y2 && y < y1)) {
+                double t = (double)(y - y1) / (y2 - y1);
+                double x_int = vertices[i].x + t * (vertices[j].x - vertices[i].x);
+                if (count < 2) {
+                    xInts[count] = x_int;
+                    count++;
+                }
+            }
+        }
+
+        // Nếu tìm đủ 2 giao điểm (với đa giác lồi, mỗi dòng cắt qua sẽ có 2 giao điểm)
+        if (count == 2) {
+            double x1 = xInts[0], x2 = xInts[1];
+            if (x1 > x2) {
+                double temp = x1;
+                x1 = x2;
+                x2 = temp;
+            }
+
+            // Xét điều kiện để xác định vẽ toàn bộ hay chỉ viền
+            // Vẽ toàn bộ nếu dòng thuộc vùng viền trên, dưới hoặc nằm bên dưới ngưỡng T (thể hiện HP)
+            if (y < rect.y + border || y > rect.y + rect.h - border - 1 || y > T) {
+                SDL_RenderDrawLine(*renderer, (int)round(x1), y, (int)round(x2), y);
+            } else {
+                // Ở dòng nội bộ, chỉ vẽ viền trái và phải của đoạn giao cắt
+                SDL_RenderDrawLine(*renderer, (int)round(x1), y, (int)round(x1) + border - 1, y);
+                SDL_RenderDrawLine(*renderer, (int)round(x2) - border + 1, y, (int)round(x2), y);
+            }
+        }
+    }
+
+    free(vertices);
+}
+
 void drawGrass(SDL_Renderer** renderer, int originX, int originY, int type) {
 
     if (type) {
         for (int i = 0; i < GRASS_COUNT; i++) {
             // Sinh góc và bán kính ngẫu nhiên
-            double angle = ((double)rand() / RAND_MAX) * 2 * M_PI; // Góc từ 0 đến 2π
-            double radius = ((double)rand() / RAND_MAX) * (WORLD_MAP_WIDTH / 2); // Bán kính từ 0 đến 1000
+            float angle = ((float)rand() / RAND_MAX) * 2 * M_PI; // Góc từ 0 đến 2π
+            float radius = ((float)rand() / RAND_MAX) * (WORLD_MAP_WIDTH / 2); // Bán kính từ 0 đến 1000
 
             // Tính tọa độ theo góc và bán kính
             grasses[i].x = radius * cos(angle) + WORLD_ORIGIN_X;
@@ -288,7 +382,7 @@ void drawFence(SDL_Renderer** renderer, int originX, int originY, int type) {
     }
 }
 
-void drawMiniMap(SDL_Renderer** renderer, const std::vector<GameObject>& enemies, const GameObject& player) {
+void drawMiniMap(SDL_Renderer** renderer) {
 
     // Tỷ lệ thu nhỏ bản đồ
     const float scale = 1.0f * MINI_MAP_WIDTH / WORLD_MAP_WIDTH;
@@ -308,13 +402,22 @@ void drawMiniMap(SDL_Renderer** renderer, const std::vector<GameObject>& enemies
     int playerY = MINI_MAP_Y + static_cast<int>(player.rect.y * scale) - WORLD_ORIGIN_Y + MINI_MAP_HEIGHT / 2;
     drawCircle(renderer, playerX, playerY, 5, playerColor);
 
+
     // Vẽ enemies (màu đỏ)
     SDL_Color enemyColor = {255, 0, 0, 255};
+
+    int enemyX, enemyY;
+
     for (const auto& enemy : enemies) {
-        int enemyX = MINI_MAP_X + static_cast<int>(enemy.rect.x * scale) - WORLD_ORIGIN_X + MINI_MAP_WIDTH / 2;
-        int enemyY = MINI_MAP_Y + static_cast<int>(enemy.rect.y * scale) - WORLD_ORIGIN_Y + MINI_MAP_HEIGHT / 2;
+        enemyX = MINI_MAP_X + static_cast<int>(enemy.rect.x * scale) - WORLD_ORIGIN_X + MINI_MAP_WIDTH / 2;
+        enemyY = MINI_MAP_Y + static_cast<int>(enemy.rect.y * scale) - WORLD_ORIGIN_Y + MINI_MAP_HEIGHT / 2;
         drawCircle(renderer, enemyX, enemyY, 4, enemyColor);
     }
+
+    enemyX = MINI_MAP_X + static_cast<int>(specialEnemy.rect.x * scale) - WORLD_ORIGIN_X + MINI_MAP_WIDTH / 2;
+    enemyY = MINI_MAP_Y + static_cast<int>(specialEnemy.rect.y * scale) - WORLD_ORIGIN_Y + MINI_MAP_HEIGHT / 2;
+    drawCircle(renderer, enemyX, enemyY, std::min(5, specialEnemy.level + 2), enemyColor);
+
 }
 
 void drawFPS(SDL_Renderer** renderer, int currentFPS) {

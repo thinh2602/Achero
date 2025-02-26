@@ -52,3 +52,9 @@ Version: 2.2.0
 Date: 2025-02-25 13:30 
 Author: Thinh Pham
 Description: Implemented FPS display and optimized character rendering.
+
+Project: Achero
+Version: 2.3.0
+Date: 2025-02-26 18:00
+Author: Thinh Pham
+Description: Added special enemies with unique abilities.

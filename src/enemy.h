@@ -4,8 +4,9 @@
 #include"config.h"
 #include<vector>
 
-extern std::vector<GameObject> enemies;
+
 
 void handleEnemyAction();
+void initSpecialEnemy();
 
 #endif

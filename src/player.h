@@ -7,6 +7,6 @@
 extern GameObject player;
 
 void initPlayer();
-void handlePlayerAction();
+void handlePlayerAction(const Uint8* state, const Uint32 mouseState);
 
 #endif
