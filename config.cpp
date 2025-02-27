@@ -10,6 +10,5 @@ const int WORLD_ORIGIN_X = WINDOW_WIDTH / 2;
 const int WORLD_ORIGIN_Y = WINDOW_HEIGHT / 2;
 
 std::vector<GameObject> arrows;
-std::vector<GameObject> enemies;
+std::unordered_map<EnemyType, std::vector<GameObject>> enemies;
 GameObject player;
-GameObject specialEnemy;

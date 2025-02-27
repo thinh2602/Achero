@@ -18,9 +18,9 @@ int main(int argc, char* argv[]) {
     SDL_Event event;
     int running = 1;
 
-    while (running) {
+    while (running != -1) {
         switch (running) {
-            case 0:
+            case -1:
                 break;
             case 1:
                 running = handleGame(&window, &renderer);
@@ -31,7 +31,7 @@ int main(int argc, char* argv[]) {
         }
         if(SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
-                running = 0;
+                running = -1;
             }
         }
     }

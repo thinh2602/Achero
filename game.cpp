@@ -13,57 +13,31 @@ int score;
 int currentFPS = 0;
 
 void handleEnemyAndArrow() {
-    for (int i = 0; i < enemies.size();) {
-        SDL_Rect rectEnemy = enemies[i].rect;
-        rectEnemy.x -= rectEnemy.w / 2;
-        rectEnemy.y -= rectEnemy.h / 2;
-        bool hit = false;
-        for (int j = 0; j < arrows.size();) {
-            SDL_Rect rectArrow = arrows[j].rect;
-            rectArrow.x -= rectArrow.w / 2;
-            rectArrow.y -= rectArrow.h / 2;
-            if (SDL_HasIntersection(&rectEnemy, &rectArrow)) {
-                enemies[i].currentHP -= arrows[j].dame;
-                arrows.erase(arrows.begin() + j);
-
-                if (enemies[i].currentHP <= 0) {
-
-                    score += enemies[i].type * 5;
-                    
-                    enemies.erase(enemies.begin() + i);
-                    hit = true;
-                    break;
+    for (auto &[enemyType, vectorEnemy] : enemies) {
+        vectorEnemy.erase(std::remove_if(vectorEnemy.begin(), vectorEnemy.end(), [&](GameObject &enemy) {  // Thêm dấu & vào GameObject &enemy
+            SDL_Rect rectEnemy = enemy.rect;
+            rectEnemy.x -= rectEnemy.w / 2;
+            rectEnemy.y -= rectEnemy.h / 2;
+            
+            arrows.erase(std::remove_if(arrows.begin(), arrows.end(), [&](GameObject &arrow) {  // Thêm dấu & vào GameObject &arrow
+                if (enemy.currentHP <= 0) {
+                    return false;
                 }
-
-            } else {
-                j++;
+                SDL_Rect rectArrow = arrow.rect;
+                rectArrow.x -= rectArrow.w / 2;
+                rectArrow.y -= rectArrow.h / 2;
+                
+                if (SDL_HasIntersection(&rectEnemy, &rectArrow)) {
+                    enemy.currentHP -= arrow.dame;
+                    return true;
+                }
+                return false;
+            }), arrows.end());
+            if (enemy.currentHP <= 0) {
+                score += (1 << enemy.level) * 5;
             }
-        }
-        if (!hit) {
-            i++;
-        }
-    }
-}
-
-void handleSpcecilEnemyAndArrow() {
-    SDL_Rect rectEnemy = specialEnemy.rect;
-    rectEnemy.x -= rectEnemy.w / 2;
-    rectEnemy.y -= rectEnemy.h / 2;
-    for (int j = 0; j < arrows.size();) {
-        SDL_Rect rectArrow = arrows[j].rect;
-        rectArrow.x -= rectArrow.w / 2;
-        rectArrow.y -= rectArrow.h / 2;
-        if (SDL_HasIntersection(&rectEnemy, &rectArrow)) {
-            specialEnemy.currentHP -= arrows[j].dame;
-            arrows.erase(arrows.begin() + j);
-
-            if (specialEnemy.currentHP <= 0) {
-                score += (1 << specialEnemy.level) * 15;
-                break;
-            }
-        } else {
-            j++;
-        }
+            return enemy.currentHP <= 0;
+        }), vectorEnemy.end());
     }
 }
 
@@ -71,33 +45,23 @@ void handlePlayerAndEnemy() {
     SDL_Rect rectPlayer = player.rect;
     rectPlayer.x -= rectPlayer.w / 2;
     rectPlayer.y -= rectPlayer.h / 2;
-    for (int i = 0; i < enemies.size(); i++) {
-        SDL_Rect rectEnemy = enemies[i].rect;
-        rectEnemy.x -= rectEnemy.w / 2;
-        rectEnemy.y -= rectEnemy.h / 2;
-        if (SDL_HasIntersection(&rectPlayer, &rectEnemy)) {
-            player.currentHP -= enemies[i].dame;
-            enemies[i].currentHP -= player.dame;
-            if (enemies[i].currentHP <= 0) {
-                score += enemies[i].type * 5;
-                enemies.erase(enemies.begin() + i);
+
+    for (auto& [enemyType, vectorEnemy] : enemies) {
+        vectorEnemy.erase(std::remove_if(vectorEnemy.begin(), vectorEnemy.end(), [&](GameObject& enemy) {
+            SDL_Rect rectEnemy = enemy.rect;
+            rectEnemy.x -= rectEnemy.w / 2;
+            rectEnemy.y -= rectEnemy.h / 2;
+
+            if (SDL_HasIntersection(&rectPlayer, &rectEnemy)) {
+                enemy.currentHP -= player.dame;
+                player.currentHP -= enemy.dame;
+                if (enemy.currentHP <= 0) {
+                    score += (1 << enemy.level) * 5;
+                    return true;
+                }
             }
-        }
-    }
-}
-
-void handlePlayerAndSpecialEnemy() {
-    SDL_Rect rectPlayer = player.rect;
-    SDL_Rect rectEnemy = specialEnemy.rect;
-
-    rectPlayer.x -= rectPlayer.w / 2;
-    rectPlayer.y -= rectPlayer.h / 2;
-    rectEnemy.x -= rectEnemy.w / 2;
-    rectEnemy.y -= rectEnemy.h / 2;
-
-    if (SDL_HasIntersection(&rectPlayer, &rectEnemy)) {
-        player.currentHP -= specialEnemy.dame;
-        specialEnemy.currentHP -= player.dame;
+            return false;
+        }), vectorEnemy.end()); 
     }
 }
 
@@ -120,20 +84,28 @@ void renderGraphicsSDL(SDL_Renderer** renderer) {
         arrow.rect.y -= player.rect.y;
         drawCircle(renderer, arrow.rect.x, arrow.rect.y, arrow.rect.w / 2, arrow.color);
     }
-    SDL_Rect rectSpecialEnemy = specialEnemy.rect;
-    rectSpecialEnemy.x -= player.rect.x;
-    rectSpecialEnemy.y -= player.rect.y;
-    drawRegularPolygon(renderer, rectSpecialEnemy, specialEnemy.color, specialEnemy.level / 2 + 3, 1, specialEnemy.maxHP, specialEnemy.currentHP);
 
-    for (auto enemy : enemies) {
-        enemy.rect.x -= player.rect.x;
-        enemy.rect.y -= player.rect.y;
-        drawRectangle(renderer, enemy.rect, enemy.color, 1, enemy.maxHP, enemy.currentHP);
+    for (auto& [enemyType, vectorEnemy]: enemies) {
+        for (auto enemy: vectorEnemy) {
+            enemy.rect.x -= player.rect.x;
+            enemy.rect.y -= player.rect.y;
+            if (enemyType == EnemyType::Epic) {
+                drawRegularPolygon(renderer, enemy.rect, enemy.color, enemy.level / 2 + 3, 1, enemy.maxHP, enemy.currentHP);
+            } else {
+                drawRectangle(renderer, enemy.rect, enemy.color, 1, enemy.maxHP, enemy.currentHP);
+            }
+        }
     }
 
     drawScore(renderer, score);
     drawFPS(renderer, currentFPS);
-    drawNumberEnemy(renderer, enemies.size());
+
+    int countEnemy = 0;
+    for (auto& [enemyType, vectorEnemy]: enemies) {
+        countEnemy += vectorEnemy.size();
+    }
+
+    drawNumberEnemy(renderer, countEnemy);
     drawMiniMap(renderer);
 
     SDL_RenderPresent(*renderer);
@@ -162,7 +134,6 @@ int handleGame(SDL_Window** window, SDL_Renderer** renderer) {
     enemies.clear();
 
     initPlayer();
-    initSpecialEnemy();
     drawGrass(renderer, player.rect.x, player.rect.y, 1);
     drawFence(renderer, player.rect.x, player.rect.y, 1);
 
@@ -171,7 +142,7 @@ int handleGame(SDL_Window** window, SDL_Renderer** renderer) {
     while (running) {
         if (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
-                return 0;
+                return -1;
             }
         }
         state = SDL_GetKeyboardState(NULL);
@@ -202,22 +173,13 @@ int handleGame(SDL_Window** window, SDL_Renderer** renderer) {
         }), arrows.end());
         
         handleEnemyAndArrow();
-        handleSpcecilEnemyAndArrow();
-
-        if (specialEnemy.currentHP <= 0) {
-            initSpecialEnemy();
-        }
 
         renderGraphicsSDL(renderer);
 
         handlePlayerAndEnemy();
-        handlePlayerAndSpecialEnemy();
 
         if (player.currentHP <= 0) {
             running = false;
-        }
-        if (specialEnemy.currentHP <= 0) {
-            initSpecialEnemy();
         }
     }
     

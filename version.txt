@@ -58,3 +58,12 @@ Version: 2.3.0
 Date: 2025-02-26 18:00
 Author: Thinh Pham
 Description: Added special enemies with unique abilities.
+
+Project: Achero  
+Version: 2.4.0  
+Date: 2025-02-27 23:50  
+Author: Thinh Pham  
+Description:  
+- Updated data structures: modified structs to optimize performance and improve code organization.  
+- Enhanced enemy tracking system: improved monitoring and state management of enemies.  
+- Optimized several features to improve performance and reduce latency.  

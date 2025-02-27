@@ -5,6 +5,7 @@
 #include<vector>
 #include<cstdlib>
 #include<ctime>
+#include<unordered_map>
 
 #define WINDOW_TITLE "Achero"
 
@@ -17,19 +18,23 @@ extern const int WORLD_ORIGIN_Y;
 extern const int WORLD_MAP_WIDTH;
 extern const int WORLD_MAP_HEIGHT;
 
+enum class EnemyType {
+    Normal,
+    Epic
+};
+
 typedef struct {
     SDL_Rect rect;
     SDL_Color color;
     float dx, dy;
     int level, xp;
-    int type;
+    int speed;
     int currentHP, maxHP;
     int dame;
 } GameObject;
 
 extern std::vector<GameObject> arrows;
-extern std::vector<GameObject> enemies;
+extern std::unordered_map<EnemyType, std::vector<GameObject>> enemies;
 extern GameObject player;
-extern GameObject specialEnemy;
 
 #endif

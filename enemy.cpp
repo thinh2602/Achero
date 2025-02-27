@@ -1,29 +1,54 @@
 #include"src/enemy.h"
 #include<iostream>
+#include<algorithm>
 
-
-
+int epicEnemyCount = 2;
 
 void spawnEnemy() {
-    int enemyType = rand() % 3 + 1;
+    int type = rand() % 4 + 1;
 
+    if (type == 4 && enemies[EnemyType::Epic].size() == epicEnemyCount) {
+        return;
+    }
+
+    EnemyType enemyType;
     SDL_Color enemyColor;
+    int speed, maxHP, dame;
 
-    switch (enemyType) {
-        case 1:
+    switch (type) {
+        case 1: 
             enemyColor = {225, 0, 0, 255};
-            break;
-        case 2:
+            enemyType = EnemyType::Normal;
+            speed = 3;
+            maxHP = 6;
+            dame = 1;  
+            break; 
+        case 2: 
             enemyColor = {0, 255, 0, 255};
-            break;
-        case 3:
+            enemyType = EnemyType::Normal;
+            speed = 5;
+            maxHP = 4;
+            dame = 1;
+            break; 
+        case 3: 
             enemyColor = {0, 0, 255, 255};
+            enemyType = EnemyType::Normal;
+            speed = 7;
+            maxHP = 2;
+            dame = 1;  
+            break; 
+        default: 
+            enemyColor = {128, 0, 128, 255};
+            enemyType = EnemyType::Epic;
+            speed = 10;
+            maxHP = 10;   
+            dame = 1; 
             break;
     }
 
     // Sinh góc và bán kính ngẫu nhiên
     double angle = ((double)rand() / RAND_MAX) * 2 * M_PI; // Góc từ 0 đến 2π
-    double radius = (WORLD_MAP_WIDTH / 2 - 100) + ((double)rand() / RAND_MAX) * 100; // Bán kính từ 800 đến 1000
+    double radius = (WORLD_MAP_WIDTH / 2 - 400) + ((double)rand() / RAND_MAX) * 400; // Bán kính từ 800 đến 1000
 
     // Tính tọa độ theo góc và bán kính
     int spawnX = radius * cos(angle);
@@ -36,124 +61,95 @@ void spawnEnemy() {
         enemyColor,
         0, 0, 
         1, 0,
-        enemyType, 
-        (8 - enemyType * 2), (8 - enemyType * 2), 
-        (8 - enemyType * 2)
+        speed, 
+        maxHP, maxHP, 
+        dame
     };
 
-    enemies.push_back(enemy);
+    enemies[enemyType].push_back(enemy);
 }
 
 void actionEnemy() {
-    for (GameObject& enemy : enemies) {
-        float deltaX, deltaY, length;
-        if ((player.rect.x - enemy.rect.x) * (player.rect.x - enemy.rect.x) + (player.rect.y - enemy.rect.y) * (player.rect.y - enemy.rect.y) <
-        (specialEnemy.rect.x - enemy.rect.x + 50) * (specialEnemy.rect.x - enemy.rect.x + 50) + (specialEnemy.rect.y - enemy.rect.y + 50) * (specialEnemy.rect.y - enemy.rect.y + 50)) {
-            deltaX = player.rect.x - enemy.rect.x;
-            deltaY = player.rect.y - enemy.rect.y;
-            length = sqrt(deltaX * deltaX + deltaY * deltaY);
-            float length = sqrt(deltaX * deltaX + deltaY * deltaY);
-        } else {
-            deltaX = specialEnemy.rect.x - enemy.rect.x;
-            deltaY = specialEnemy.rect.y - enemy.rect.y;
-            length = sqrt(deltaX * deltaX + deltaY * deltaY);
+    for (auto &[enemyType, vectorEnemy] : enemies) {
+        for (auto &enemy : vectorEnemy) {
+            float deltaX = player.rect.x - enemy.rect.x;
+            float deltaY = player.rect.y - enemy.rect.y;
+            float lengthSquared = deltaX * deltaX + deltaY * deltaY;
+
+            if (enemyType == EnemyType::Epic && !(0 < lengthSquared && lengthSquared * 4 <= WINDOW_WIDTH * WINDOW_WIDTH)) {
+                for (auto &normalEnemy : enemies[EnemyType::Normal]) { // Sửa: dùng tham chiếu
+                    float dx = normalEnemy.rect.x - enemy.rect.x;
+                    float dy = normalEnemy.rect.y - enemy.rect.y;
+                    float lenSquared = dx * dx + dy * dy; // Sửa: dùng dx, dy thay vì deltaX, deltaY
+
+                    if (lenSquared < lengthSquared) {
+                        deltaX = dx;
+                        deltaY = dy;
+                        lengthSquared = lenSquared;
+                    }
+                }
+            } else if (0 < lengthSquared && lengthSquared <= WINDOW_WIDTH * WINDOW_WIDTH) {
+                float length = std::sqrt(lengthSquared); // Lấy căn bậc hai để so sánh khoảng cách thực
+                if (length * 2 <= enemy.rect.w + player.rect.w) {
+                    return;
+                }
+            }
+
+            float length = std::sqrt(lengthSquared); // Lấy căn bậc hai trước khi chia
+            if (length == 0) continue; // Tránh chia cho 0
+
+            enemy.rect.x += (deltaX / length) * enemy.speed;
+            enemy.rect.y += (deltaY / length) * enemy.speed;            
         }
-        int speed = 0;
-        switch (enemy.type) {
-            case 1: speed = 3; break; 
-            case 2: speed = 5; break; 
-            case 3: speed = 7; break; 
-            default: speed = 5;  
-        }
+    }
+}
+
+
+void enemyUpgrade(GameObject& enemy) {
+    if ((1 << (enemy.level - 1)) <= enemy.xp) {
+        enemy.xp -= (1 << (enemy.level - 1));
+        enemy.level += 1;
+        enemy.rect.w += enemy.rect.w / 3;
+        enemy.rect.h += enemy.rect.h / 3;
+        enemy.dx++;
+        enemy.dy++;
+        enemy.currentHP += enemy.maxHP / 3;
+        enemy.maxHP += enemy.maxHP / 3;
+        enemy.dame++;
+    }
+}
+
+void enemyConsumeEnemy() {
+    for (auto& epicEnemy : enemies[EnemyType::Epic]) {
+        SDL_Rect rectEpicEnemy = epicEnemy.rect;
+        rectEpicEnemy.x -= rectEpicEnemy.w / 2;
+        rectEpicEnemy.y -= rectEpicEnemy.h / 2;
     
-        enemy.rect.x += deltaX / length * speed;
-        enemy.rect.y += deltaY / length * speed;
-
+        std::vector<GameObject>& normalEnemies = enemies[EnemyType::Normal];
+        normalEnemies.erase(std::remove_if(normalEnemies.begin(), normalEnemies.end(), [&](GameObject &normalEnemy) { 
+            normalEnemy.rect.x -= normalEnemy.rect.w / 2;
+            normalEnemy.rect.y -= normalEnemy.rect.h / 2;
+            
+            if (SDL_HasIntersection(&rectEpicEnemy, &normalEnemy.rect)) {
+                epicEnemy.xp++;
+                epicEnemy.currentHP = std::min(epicEnemy.currentHP + 2, epicEnemy.maxHP);
+                enemyUpgrade(epicEnemy);
+                return true;
+            }
+            normalEnemy.rect.x += normalEnemy.rect.w / 2;
+            normalEnemy.rect.y += normalEnemy.rect.h / 2;
+            return false;
+        }), normalEnemies.end());  // Sửa: thêm `.end()`
     }
-}
-
-void actionSpecialEnemy() {
-    float deltaX = player.rect.x - specialEnemy.rect.x;
-    float deltaY = player.rect.y - specialEnemy.rect.y;
-    float length = sqrt(deltaX * deltaX + deltaY * deltaY);
-    int speed = specialEnemy.dx;
-    if (0 < length && length <= WINDOW_WIDTH / 2) {
-        specialEnemy.rect.x += deltaX / length * speed;
-        specialEnemy.rect.y += deltaY / length * speed;
-    } else if ((int) enemies.size()){
-        deltaX = enemies[0].rect.x - specialEnemy.rect.x;
-        deltaY = enemies[0].rect.y - specialEnemy.rect.y;
-        length = sqrt(deltaX * deltaX + deltaY * deltaY);
-        if (length == 0) {
-            return;
-        }
-        specialEnemy.rect.x += deltaX / length * speed;
-        specialEnemy.rect.y += deltaY / length * speed;
-    }
-
-}
-
-void initSpecialEnemy() {
-    double angle = ((double)rand() / RAND_MAX) * 2 * M_PI;
-    double radius = (WORLD_MAP_WIDTH / 2 - 400) + ((double)rand() / RAND_MAX) * 200;
-
-    int spawnX = radius * cos(angle);
-    int spawnY = radius * sin(angle);
-
-    SDL_Rect rect = {spawnX, spawnY, 40, 40};
-
-    specialEnemy = {
-        rect,
-        {128, 0, 128, 255},
-        7, 7,
-        1, 0, 
-        0,
-        20, 20,
-        3
-    };
-}
-
-void enemyUpgrade() {
-    if ((1 << (specialEnemy.level - 1)) <= specialEnemy.xp) {
-        specialEnemy.xp -= (1 << (specialEnemy.level - 1));
-        specialEnemy.level += 1;
-        specialEnemy.rect.w += specialEnemy.rect.w / 3;
-        specialEnemy.rect.h += specialEnemy.rect.h / 3;
-        specialEnemy.dx++;
-        specialEnemy.dy++;
-        specialEnemy.currentHP += specialEnemy.maxHP / 3;
-        specialEnemy.maxHP += specialEnemy.maxHP / 3;
-        specialEnemy.dame++;
-    }
-}
-
-void specialEnemyConsumeEnemy() {
-    SDL_Rect rectSpecialEnemy = specialEnemy.rect;
-    rectSpecialEnemy.x -= rectSpecialEnemy.w / 2;
-    rectSpecialEnemy.y -= rectSpecialEnemy.h / 2;
-    for (int i = 0; i < enemies.size();) {
-        SDL_Rect rectEnemy = enemies[i].rect;
-        rectEnemy.x -= rectEnemy.w / 2;
-        rectEnemy.y -= rectEnemy.h / 2;
-        if (SDL_HasIntersection(&rectSpecialEnemy, &rectEnemy)) {
-            specialEnemy.xp += 1 << (enemies[i].level - 1);
-            specialEnemy.currentHP = std::min(specialEnemy.currentHP + 2, specialEnemy.maxHP);
-            enemies.erase(enemies.begin() + i);
-        } else {
-            i++;
-        }
-    }
+    
 }
 
 void handleEnemyAction() {
-    specialEnemyConsumeEnemy();
 
-    if (rand() % 16 == 0) {
+    if (rand() % 6 == 0) {
         spawnEnemy();
     }
 
-    enemyUpgrade();
-
+    enemyConsumeEnemy();
     actionEnemy();
-    actionSpecialEnemy();
 }

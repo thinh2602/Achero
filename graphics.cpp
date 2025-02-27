@@ -408,15 +408,19 @@ void drawMiniMap(SDL_Renderer** renderer) {
 
     int enemyX, enemyY;
 
-    for (const auto& enemy : enemies) {
-        enemyX = MINI_MAP_X + static_cast<int>(enemy.rect.x * scale) - WORLD_ORIGIN_X + MINI_MAP_WIDTH / 2;
-        enemyY = MINI_MAP_Y + static_cast<int>(enemy.rect.y * scale) - WORLD_ORIGIN_Y + MINI_MAP_HEIGHT / 2;
-        drawCircle(renderer, enemyX, enemyY, 4, enemyColor);
+    
+    for (auto& [enemyType, vectorEnemy]: enemies) {
+        for (auto enemy: vectorEnemy) {
+            int enemyX, enemyY;
+            enemyX = MINI_MAP_X + static_cast<int>(enemy.rect.x * scale) - WORLD_ORIGIN_X + MINI_MAP_WIDTH / 2;
+            enemyY = MINI_MAP_Y + static_cast<int>(enemy.rect.y * scale) - WORLD_ORIGIN_Y + MINI_MAP_HEIGHT / 2;
+            if (enemyType == EnemyType::Epic) {
+                drawCircle(renderer, enemyX, enemyY, std::min(5, enemy.level + 2), enemyColor);
+            } else {
+                drawCircle(renderer, enemyX, enemyY, 4, enemyColor);
+            }
+        }
     }
-
-    enemyX = MINI_MAP_X + static_cast<int>(specialEnemy.rect.x * scale) - WORLD_ORIGIN_X + MINI_MAP_WIDTH / 2;
-    enemyY = MINI_MAP_Y + static_cast<int>(specialEnemy.rect.y * scale) - WORLD_ORIGIN_Y + MINI_MAP_HEIGHT / 2;
-    drawCircle(renderer, enemyX, enemyY, std::min(5, specialEnemy.level + 2), enemyColor);
 
 }
 
@@ -452,7 +456,7 @@ void drawFPS(SDL_Renderer** renderer, int currentFPS) {
     SDL_DestroyTexture(textTexture);
 }
 
-bool renderEndGameScreen(SDL_Renderer** renderer, int score) {
+int renderEndGameScreen(SDL_Renderer** renderer, int score) {
     int sizeFont = 24;
     SDL_SetRenderDrawColor(*renderer, 0, 0, 0, 255);
     SDL_RenderClear(*renderer);
@@ -516,13 +520,13 @@ bool renderEndGameScreen(SDL_Renderer** renderer, int score) {
     // Xử lý sự kiện chuột khi nhấn nút
     SDL_Event event;
     bool waitingForInput = true;
-    bool ans;
+    int ans;
 
     while (waitingForInput) {
         if (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
                 waitingForInput = false;
-                ans = false;
+                ans = -1;
                 break;
             }
 
@@ -534,7 +538,7 @@ bool renderEndGameScreen(SDL_Renderer** renderer, int score) {
                 if (mouseX >= retryButton.x && mouseX <= retryButton.x + retryButton.w &&
                     mouseY >= retryButton.y && mouseY <= retryButton.y + retryButton.h) {
 
-                    ans = true;
+                    ans = 1;
                     waitingForInput = false;
                     break;
                 }
@@ -544,7 +548,7 @@ bool renderEndGameScreen(SDL_Renderer** renderer, int score) {
                     mouseY >= exitButton.y && mouseY <= exitButton.y + exitButton.h) {
 
                     waitingForInput = false;
-                    ans = false;
+                    ans = -1;
                     break;
                 }
             }

@@ -15,7 +15,7 @@ void drawNumberEnemy(SDL_Renderer** renderer, int numberEnemy);
 void drawFence(SDL_Renderer** renderer, int originX, int originY, int type = 0);
 void drawMiniMap(SDL_Renderer** renderer);
 void drawFPS(SDL_Renderer** renderer, int currentFPS);
-bool renderEndGameScreen(SDL_Renderer** renderer, int score);
+int renderEndGameScreen(SDL_Renderer** renderer, int score);
 void deInitSDL(SDL_Window** window, SDL_Renderer** renderer);
 
 
