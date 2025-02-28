@@ -53,8 +53,8 @@ void handlePlayerAndEnemy() {
             rectEnemy.y -= rectEnemy.h / 2;
 
             if (SDL_HasIntersection(&rectPlayer, &rectEnemy)) {
-                enemy.currentHP -= player.dame;
-                player.currentHP -= enemy.dame;
+                // enemy.currentHP -= player.dame;
+                // player.currentHP -= enemy.dame;
                 if (enemy.currentHP <= 0) {
                     score += (1 << enemy.level) * 5;
                     return true;

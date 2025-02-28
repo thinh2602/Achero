@@ -47,19 +47,19 @@ void spawnEnemy() {
     }
 
     // Sinh góc và bán kính ngẫu nhiên
-    double angle = ((double)rand() / RAND_MAX) * 2 * M_PI; // Góc từ 0 đến 2π
-    double radius = (WORLD_MAP_WIDTH / 2 - 400) + ((double)rand() / RAND_MAX) * 400; // Bán kính từ 800 đến 1000
+    float angle = ((float)rand() / RAND_MAX) * 2 * M_PI; // Góc từ 0 đến 2π
+    float radius = (WORLD_MAP_WIDTH / 2 - 400) + ((float)rand() / RAND_MAX) * 400; 
 
     // Tính tọa độ theo góc và bán kính
-    int spawnX = radius * cos(angle);
-    int spawnY = radius * sin(angle);
+    float spawnX = radius * cos(angle);
+    float spawnY = radius * sin(angle);
 
-    SDL_Rect rect = {spawnX, spawnY, 35, 35};
+    SDL_Rect rect = {static_cast<int> (spawnX), static_cast<int> (spawnY), 35, 35};
 
     GameObject enemy = {
         rect,
         enemyColor,
-        0, 0, 
+        spawnX, spawnY, 
         1, 0,
         speed, 
         maxHP, maxHP, 
@@ -80,7 +80,7 @@ void actionEnemy() {
                 for (auto &normalEnemy : enemies[EnemyType::Normal]) { // Sửa: dùng tham chiếu
                     float dx = normalEnemy.rect.x - enemy.rect.x;
                     float dy = normalEnemy.rect.y - enemy.rect.y;
-                    float lenSquared = dx * dx + dy * dy; // Sửa: dùng dx, dy thay vì deltaX, deltaY
+                    float lenSquared = dx * dx + dy * dy;
 
                     if (lenSquared < lengthSquared) {
                         deltaX = dx;
@@ -88,10 +88,20 @@ void actionEnemy() {
                         lengthSquared = lenSquared;
                     }
                 }
-            } else if (0 < lengthSquared && lengthSquared <= WINDOW_WIDTH * WINDOW_WIDTH) {
+            } else if (0 <= lengthSquared && lengthSquared <= WINDOW_WIDTH * WINDOW_WIDTH) {
                 float length = std::sqrt(lengthSquared); // Lấy căn bậc hai để so sánh khoảng cách thực
                 if (length * 2 <= enemy.rect.w + player.rect.w) {
-                    return;
+                    continue;
+                }
+            } else {
+                deltaX = enemy.dx - enemy.rect.x;
+                deltaY = enemy.dy - enemy.rect.y;
+                lengthSquared = deltaX * deltaX + deltaY * deltaY;
+                if (lengthSquared <= enemy.rect.w * enemy.rect.w * 4) {
+                    float angle = ((float)rand() / RAND_MAX) * 2 * M_PI; // Góc từ 0 đến 2π
+                    float radius = (WORLD_MAP_WIDTH / 2 - 400) + ((float)rand() / RAND_MAX) * 400;
+                    enemy.dx = radius * cos(angle);
+                    enemy.dy = radius * sin(angle);
                 }
             }
 
@@ -103,7 +113,6 @@ void actionEnemy() {
         }
     }
 }
-
 
 void enemyUpgrade(GameObject& enemy) {
     if ((1 << (enemy.level - 1)) <= enemy.xp) {
@@ -120,18 +129,20 @@ void enemyUpgrade(GameObject& enemy) {
 }
 
 void enemyConsumeEnemy() {
-    for (auto& epicEnemy : enemies[EnemyType::Epic]) {
+    for (auto &epicEnemy : enemies[EnemyType::Epic]) {
         SDL_Rect rectEpicEnemy = epicEnemy.rect;
         rectEpicEnemy.x -= rectEpicEnemy.w / 2;
         rectEpicEnemy.y -= rectEpicEnemy.h / 2;
-    
-        std::vector<GameObject>& normalEnemies = enemies[EnemyType::Normal];
-        normalEnemies.erase(std::remove_if(normalEnemies.begin(), normalEnemies.end(), [&](GameObject &normalEnemy) { 
+
+        // Xử lý ăn NormalEnemy
+        std::vector<GameObject> &normalEnemies = enemies[EnemyType::Normal];
+        normalEnemies.erase(std::remove_if(normalEnemies.begin(), normalEnemies.end(), [&](GameObject &normalEnemy) {
             normalEnemy.rect.x -= normalEnemy.rect.w / 2;
             normalEnemy.rect.y -= normalEnemy.rect.h / 2;
-            
+
             if (SDL_HasIntersection(&rectEpicEnemy, &normalEnemy.rect)) {
-                epicEnemy.xp++;
+                int gainedXP = std::pow(2, normalEnemy.level - 1); // EXP = 2^(level - 1)
+                epicEnemy.xp += gainedXP;
                 epicEnemy.currentHP = std::min(epicEnemy.currentHP + 2, epicEnemy.maxHP);
                 enemyUpgrade(epicEnemy);
                 return true;
@@ -139,10 +150,29 @@ void enemyConsumeEnemy() {
             normalEnemy.rect.x += normalEnemy.rect.w / 2;
             normalEnemy.rect.y += normalEnemy.rect.h / 2;
             return false;
-        }), normalEnemies.end());  // Sửa: thêm `.end()`
+        }), normalEnemies.end());
+
+        // Xử lý EpicEnemy tự ăn nhau nếu có level thấp hơn
+        std::vector<GameObject> &epicEnemies = enemies[EnemyType::Epic];
+        epicEnemies.erase(std::remove_if(epicEnemies.begin(), epicEnemies.end(), [&](GameObject &otherEpicEnemy) {
+            if (&epicEnemy == &otherEpicEnemy) return false; // Không ăn chính mình
+            
+            SDL_Rect rectOther = otherEpicEnemy.rect;
+            rectOther.x -= rectOther.w / 2;
+            rectOther.y -= rectOther.h / 2;
+
+            if (otherEpicEnemy.level < epicEnemy.level && SDL_HasIntersection(&rectEpicEnemy, &rectOther)) {
+                int gainedXP = std::pow(2, otherEpicEnemy.level - 1); // EXP = 2^(level - 1)
+                epicEnemy.xp += gainedXP;
+                epicEnemy.currentHP = std::min(epicEnemy.currentHP + otherEpicEnemy.currentHP, epicEnemy.maxHP);
+                enemyUpgrade(epicEnemy);
+                return true;
+            }
+            return false;
+        }), epicEnemies.end());
     }
-    
 }
+
 
 void handleEnemyAction() {
 

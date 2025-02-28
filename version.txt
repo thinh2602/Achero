@@ -67,3 +67,10 @@ Description:
 - Updated data structures: modified structs to optimize performance and improve code organization.  
 - Enhanced enemy tracking system: improved monitoring and state management of enemies.  
 - Optimized several features to improve performance and reduce latency.  
+
+Project: Achero  
+Version: 2.4.1  
+Date: 2025-02-28 10:00  
+Author: Thinh Pham  
+Description:  
+- Enhanced Epic Enemy Absorption: Refined absorption mechanics to provide a more immersive and strategic experience.
