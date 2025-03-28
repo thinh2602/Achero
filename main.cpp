@@ -16,8 +16,7 @@ int main(int argc, char* argv[]) {
     }
 
     SDL_Event event;
-    int running = 1;
-
+    int running = rendererInitGame(&renderer);
     while (running != -1) {
         switch (running) {
             case -1:

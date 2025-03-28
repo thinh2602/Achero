@@ -557,6 +557,65 @@ int renderEndGameScreen(SDL_Renderer** renderer, int score) {
     return ans;
 }
 
+int rendererInitGame(SDL_Renderer** renderer) {
+    int sizeFont = 32; // Cỡ chữ lớn hơn
+    SDL_SetRenderDrawColor(*renderer, 0, 0, 0, 255);
+    SDL_RenderClear(*renderer);
+
+    SDL_Color white = {255, 255, 255}; // Màu trắng cho chữ
+
+    // Hiển thị chữ "ACHERO"
+    SDL_Surface* titleSurface = TTF_RenderText_Solid(fonts[sizeFont], "ACHERO", white);
+    SDL_Texture* titleTexture = SDL_CreateTextureFromSurface(*renderer, titleSurface);
+    SDL_Rect titleRect = {WINDOW_WIDTH / 2 - 100, WINDOW_HEIGHT / 2 - 100, 200, 50};
+    
+    SDL_RenderCopy(*renderer, titleTexture, NULL, &titleRect);
+    SDL_FreeSurface(titleSurface);
+    SDL_DestroyTexture(titleTexture);
+
+    SDL_Rect startButton = {WINDOW_WIDTH / 2 - 75, WINDOW_HEIGHT / 2, 150, 50};
+    SDL_Rect startTextRect = {WINDOW_WIDTH / 2 - 45, WINDOW_HEIGHT / 2 + 10, 90, 30};
+
+    bool waitingForInput = true;
+    SDL_Event event;
+
+    while (waitingForInput) {
+        Uint32 time = SDL_GetTicks();
+        int greenIntensity = 150 + 105 * sin(time * 0.005); // Tạo hiệu ứng nhấp nháy
+
+        SDL_SetRenderDrawColor(*renderer, 0, greenIntensity, 0, 255);
+        SDL_RenderFillRect(*renderer, &startButton);
+
+        // Hiển thị chữ "START"
+        SDL_Surface* startSurface = TTF_RenderText_Solid(fonts[sizeFont], "START", white);
+        SDL_Texture* startTexture = SDL_CreateTextureFromSurface(*renderer, startSurface);
+        SDL_RenderCopy(*renderer, startTexture, NULL, &startTextRect);
+        SDL_FreeSurface(startSurface);
+        SDL_DestroyTexture(startTexture);
+
+        SDL_RenderPresent(*renderer);
+        SDL_Delay(50); // Giảm tải CPU và tạo hiệu ứng mượt hơn
+
+        if (SDL_PollEvent(&event)) {
+            if (event.type == SDL_QUIT) {
+                return -1;
+            }
+
+            if (event.type == SDL_MOUSEBUTTONDOWN) {
+                int mouseX = event.button.x;
+                int mouseY = event.button.y;
+
+                if (mouseX >= startButton.x && mouseX <= startButton.x + startButton.w &&
+                    mouseY >= startButton.y && mouseY <= startButton.y + startButton.h) {
+                    return 1; // Bắt đầu game
+                }
+            }
+        }
+    }
+    return 0;
+}
+
+
 void deInitSDL(SDL_Window** window, SDL_Renderer** renderer) {
     for (int size = 1; size <= 50; size++) {
         TTF_CloseFont(fonts[size]);
@@ -566,3 +625,4 @@ void deInitSDL(SDL_Window** window, SDL_Renderer** renderer) {
     SDL_DestroyRenderer(*renderer);
     SDL_Quit();
 }
+

@@ -74,3 +74,11 @@ Date: 2025-02-28 10:00
 Author: Thinh Pham  
 Description:  
 - Enhanced Epic Enemy Absorption: Refined absorption mechanics to provide a more immersive and strategic experience.
+
+Project: Achero  
+Version: 2.4.1  
+Date: 2025-03-28 9:00  
+Author: Thinh Pham  
+Description:
+- Game Initialization Screen: Added rendererInitGame function to display the title "ACHERO" and a "START" button on a black background.
+- Enhanced Epic Enemy Absorption: Refined absorption mechanics to provide a more immersive and strategic experience.

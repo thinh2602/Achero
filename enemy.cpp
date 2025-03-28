@@ -90,7 +90,7 @@ void actionEnemy() {
                 }
             } else if (0 <= lengthSquared && lengthSquared <= WINDOW_WIDTH * WINDOW_WIDTH) {
                 float length = std::sqrt(lengthSquared); // Lấy căn bậc hai để so sánh khoảng cách thực
-                if (length * 2 <= enemy.rect.w + player.rect.w) {
+                if (length * 2 <= enemy.rect.w + player.rect.w - 2) {
                     continue;
                 }
             } else {
